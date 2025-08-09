@@ -7,17 +7,19 @@ import os
 app = Flask(__name__)
 
 # Load the Home Assistant token and URL from environment variables
-# In a real add-on, these would be passed securely
 HA_URL = os.environ.get('HA_URL', 'http://supervisor/core/api/')
-#HA_TOKEN = os.environ.get('HA_TOKEN', 'YOUR_LONG_LIVED_ACCESS_TOKEN')
 HA_TOKEN = os.environ.get('SUPERVISOR_TOKEN')
-app.logger.info(f"SUPERVISOR_TOKEN is set: {bool(HA_TOKEN)}")
-app.logger.info(f"Using token: {HA_TOKEN[:5]}...")
 
-HEADERS = {
-    'Authorization': f'Bearer {HA_TOKEN}',
-    'Content-Type': 'application/json',
-}
+# Check if the token exists before using it
+if HA_TOKEN:
+    app.logger.info(f"SUPERVISOR_TOKEN is set. Using token: {HA_TOKEN[:5]}...")
+    HEADERS = {
+        'Authorization': f'Bearer {HA_TOKEN}',
+        'Content-Type': 'application/json',
+    }
+else:
+    app.logger.error("SUPERVISOR_TOKEN is not set. Add-on cannot access Home Assistant API.")
+    HEADERS = {} # Or handle this error gracefully
 
 @app.route('/')
 def index():

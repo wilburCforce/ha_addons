@@ -1,5 +1,5 @@
 name: "IR Builder"
-version: "0.1.6"
+version: "0.1.7"
 slug: "ir_builder"
 description: "An add-on to help build an automation for an IR blaster remote"
 homeassistant_api: true
