@@ -1,9 +1,7 @@
-# app.py
-from flask import Flask, render_template, request, jsonify
+import os
 import requests
 import json
-import os
-import logging
+from flask import Flask, render_template, request, redirect, url_for
 
 # Configure basic logging for the application
 logging.basicConfig(level=logging.INFO)
@@ -14,7 +12,8 @@ app.logger.info("Starting IR Builder Flask application...")
 
 # Load the Home Assistant token and URL from environment variables
 # This uses the SUPERVISOR_TOKEN which is automatically provided to add-ons.
-HA_URL = os.environ.get('HA_URL', 'http://supervisor/core/api/')
+#HA_URL = os.environ.get('HA_URL', 'http://supervisor/core/api/')
+HA_URL = "http://supervisor/core/api"
 HA_TOKEN = os.environ.get('SUPERVISOR_TOKEN')
 
 # Log the token status for debugging
