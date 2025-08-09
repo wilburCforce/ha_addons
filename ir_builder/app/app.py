@@ -9,7 +9,8 @@ app = Flask(__name__)
 # Load the Home Assistant token and URL from environment variables
 # In a real add-on, these would be passed securely
 HA_URL = os.environ.get('HA_URL', 'http://supervisor/core/api/')
-HA_TOKEN = os.environ.get('HA_TOKEN', 'YOUR_LONG_LIVED_ACCESS_TOKEN')
+#HA_TOKEN = os.environ.get('HA_TOKEN', 'YOUR_LONG_LIVED_ACCESS_TOKEN')
+HA_TOKEN = os.environ.get('SUPERVISOR_TOKEN')
 HEADERS = {
     'Authorization': f'Bearer {HA_TOKEN}',
     'Content-Type': 'application/json',
