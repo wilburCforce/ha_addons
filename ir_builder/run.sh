@@ -9,4 +9,4 @@ else
     bashio::log.info "SUPERVISOR_TOKEN is successfully set. Add-on has access to the Supervisor API."
 fi
 #exec python3 /app/app.py
-exec /opt/venv/bin/python3 /app/app/app.py
+exec /opt/venv/bin/python3 /app/app.py
