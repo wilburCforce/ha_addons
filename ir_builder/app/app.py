@@ -62,64 +62,7 @@ def index():
         app.logger.error(f"Error connecting to Home Assistant API: {e}")
         return f"Error connecting to Home Assistant: {e}", 500
 
-@app.route('/learn_mode', methods=['POST'])
-def learn_mode():
-    """Calls the Home Assistant service to put a specific device in learning mode."""
-    entity_id = request.json.get('entity_id')
-    app.logger.info(f"Received request to start learning mode for {entity_id}.")
 
-    if not entity_id:
-        return jsonify({'status': 'error', 'message': 'No entity_id provided.'}), 400
-
-    data = {"entity_id": entity_id}
-    
-    try:
-        # Call the `remote.learn_command` service via the HA API
-        response = requests.post(
-            f'{HA_URL}services/remote/learn_command', 
-            headers=HEADERS, 
-            json=data,
-            timeout=10
-        )
-        response.raise_for_status()
-        
-        app.logger.info(f"Successfully activated learning mode for {entity_id}.")
-        return jsonify({
-            'status': 'success', 
-            'message': f'Learning mode activated for {entity_id}. Press a button on your remote.'
-        })
-    except requests.exceptions.RequestException as e:
-        app.logger.error(f"Failed to call service for {entity_id}: {e}")
-        return jsonify({'status': 'error', 'message': f'Failed to call service: {e}'}), 500
-
-@app.route('/generate_yaml', methods=['POST'])
-def generate_yaml():
-    """Generates a YAML automation for a learned command."""
-    device_id = request.json.get('device_id')
-    command_name = request.json.get('command_name')
-    app.logger.info(f"Received request to generate YAML for device {device_id} with command '{command_name}'.")
-
-    if not all([device_id, command_name]):
-        return jsonify({'status': 'error', 'message': 'Missing required parameters.'}), 400
-
-    # A simple YAML template for the automation
-    yaml_template = f"""
-- id: 'generated_ir_command_{command_name}'
-  alias: 'IR Command - {command_name.replace("_", " ").title()}'
-  trigger:
-    - platform: state
-      entity_id: remote.{device_id.split('.')[1]}
-      to: 'learning_command_complete'
-  action:
-    - service: remote.send_command
-      data:
-        entity_id: remote.{device_id.split('.')[1]}
-        command:
-          - '{command_name}'
-    """
-    
-    app.logger.info("Successfully generated YAML template.")
-    return jsonify({'status': 'success', 'yaml': yaml_template})
 
 if __name__ == '__main__':
     # The app is now configured to run on port 8389.
