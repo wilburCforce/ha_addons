@@ -1,5 +1,5 @@
 name: "IR Builder"
-version: "0.1.18"
+version: "0.1.19"
 slug: "ir_builder"
 description: "An add-on to help build an automation for an IR blaster remote"
 homeassistant_api: true
@@ -11,11 +11,11 @@ arch:
   - armv7
 url: "https://github.com/wilburCforce/ha_addons"
 startup: "application"
-webui: "http://[HOST]:[PORT:8089]"
+webui: "http://[HOST]:[PORT:8389]"
 ports:
-  8089/tcp: null # The port your web server will listen on. null means Home Assistant will assign a port.
+  8389/tcp: null # The port your web server will listen on. null means Home Assistant will assign a port.
 ports_description:
-  8089/tcp: "Web server IR Builder"
+  8389/tcp: "Web server IR Builder"
 ingress: true
 panel_icon: mdi:robot-happy
 init: false
