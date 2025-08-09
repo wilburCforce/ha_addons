@@ -1,64 +1,65 @@
-# app.py
-from flask import Flask, render_template, request, jsonify
+import os
 import requests
 import json
-import os
+from flask import Flask, render_template, request, redirect, url_for
 
 app = Flask(__name__)
-app.logger.info("Flask app instance created.")
 
-# Load the Home Assistant token and URL from environment variables
-HA_URL = os.environ.get('HA_URL', 'http://supervisor/core/api/')
-HA_TOKEN = os.environ.get('SUPERVISOR_TOKEN')
+# Get the Home Assistant API token and URL from the environment
+# The Home Assistant base image automatically exposes these
+TOKEN = os.environ.get('SUPERVISOR_TOKEN')
+HASS_URL = "http://supervisor/core/api"
 
-app.logger.info("Attempting to get HA_TOKEN from SUPERVISOR_TOKEN...")
-if HA_TOKEN:
-    app.logger.info(f"SUPERVISOR_TOKEN is set. Token length: {len(HA_TOKEN)}.")
-    HEADERS = {
-        'Authorization': f'Bearer {HA_TOKEN}',
-        'Content-Type': 'application/json',
-    }
-    app.logger.info("HEADERS dictionary created successfully.")
-else:
-    app.logger.error("SUPERVISOR_TOKEN is not set. Add-on cannot access Home Assistant API.")
-    HEADERS = {} # Fallback
-    
-app.logger.info("Defining Flask routes...")
+app.logger.info(f"SUPERVISOR_TOKEN is set: {bool(TOKEN)}")
+app.logger.info(f"Using token: {TOKEN[:5]}...")
+
 @app.route('/')
 def index():
-    """Renders the main page and fetches devices."""
-    app.logger.info("Route '/' called.")
-    if not HA_TOKEN:
-        return "Error: Home Assistant token is not available.", 500
-    try:
-        app.logger.info(f"Fetching states from: {HA_URL}states")
-        response = requests.get(f'{HA_URL}states', headers=HEADERS)
-        response.raise_for_status()
-        states = response.json()
-        app.logger.info(f"Successfully fetched {len(states)} states.")
-        broadlink_devices = [
-            state for state in states 
-            if state['entity_id'].startswith('remote.') and 'broadlink' in state['entity_id']
-        ]
-        app.logger.info(f"Found {len(broadlink_devices)} Broadlink devices.")
-        return render_template('index.html', devices=broadlink_devices)
-    except requests.exceptions.RequestException as e:
-        app.logger.error(f"Error connecting to Home Assistant: {e}")
-        return f"Error connecting to Home Assistant: {e}", 500
+    # Fetch all automations from the Home Assistant API
+    headers = {
+        'Authorization': f'Bearer {TOKEN}',
+        'Content-Type': 'application/json'
+    }
+    response = requests.get(f'{HASS_URL}/states', headers=headers)
+    response.raise_for_status()
+    states = response.json()
 
-@app.route('/learn_mode', methods=['POST'])
-def learn_mode():
-    """Calls the Home Assistant service to put a device in learning mode."""
-    # ... (rest of your learn_mode function) ...
-    pass
+    automations = []
+    for state in states:
+        if state['entity_id'].startswith('automation.'):
+            # Fetch the full YAML for the automation
+            # This is a bit more complex. You'd need to find a way to get the YAML from the automations.yaml file.
+            # A simpler way for a proof-of-concept is to just get the state and attribute data.
+            automations.append({
+                'entity_id': state['entity_id'],
+                'alias': state['attributes'].get('friendly_name', 'No Alias'),
+                'raw_yaml': '...' # You would pull this from the file system, or a specific API endpoint.
+            })
 
-@app.route('/generate_yaml', methods=['POST'])
-def generate_yaml():
-    """Generates the YAML for a Home Assistant automation."""
-    # ... (rest of your generate_yaml function) ...
-    pass
+    return render_template('index.html', automations=automations)
+
+@app.route('/submit', methods=['POST'])
+def submit():
+    selected_automations = request.form.getlist('selected_automations')
+    data_to_submit = []
+
+    for automation_id in selected_automations:
+        user_description = request.form.get(f'description_{automation_id}')
+        
+        # In a real app, you would fetch the full YAML and friendly names here.
+        
+        data_to_submit.append({
+            'entity_id': automation_id,
+            'description': user_description,
+            'yaml': '...', # The full YAML code
+            'friendly_names': '...' # The mapped friendly names
+        })
+    
+    # Send the data to your crowdsourcing server
+    # response = requests.post("https://your-server.com/submit-data", json=data_to_submit)
+
+    # Redirect back to the main page after submission
+    return redirect(url_for('index'))
 
 if __name__ == '__main__':
-    app.logger.info("Attempting to run Flask app...")
-    app.run(host='0.0.0.0', port=8089, debug=True)
-    app.logger.info("Flask app has started.")
+    app.run(host='0.0.0.0', port=8099)
