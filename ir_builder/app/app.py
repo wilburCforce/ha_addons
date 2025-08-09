@@ -12,89 +12,53 @@ app = Flask(__name__)
 # Log the application start
 app.logger.info("Starting IR Builder Flask application...")
 
-# Load the Home Assistant token and URL from environment variables
-# This uses the SUPERVISOR_TOKEN which is automatically provided to add-ons.
-HA_URL = os.environ.get('HA_URL', 'http://supervisor/core/api/')
-HA_TOKEN = os.environ.get('SUPERVISOR_TOKEN')
-
-# Log the token status for debugging
-if HA_TOKEN:
-    app.logger.info("SUPERVISOR_TOKEN is successfully loaded.")
-else:
-    app.logger.error("SUPERVISOR_TOKEN is not available. API calls will fail.")
-
-# Create the headers dictionary for all Home Assistant API requests
-# This must be done after confirming the token exists.
-HEADERS = {
-    'Authorization': f'Bearer {HA_TOKEN}',
-    'Content-Type': 'application/json',
-}
+# We will NOT use the Home Assistant token or API calls in this diagnostic version.
+HA_TOKEN = "MOCK_TOKEN" # Use a dummy token to avoid crashes
+HEADERS = {}
 
 @app.route('/')
 def index():
-    """Renders the main page and fetches Broadlink remote devices from Home Assistant."""
+    """Renders the main page using mock data instead of fetching from the API."""
     app.logger.info("Received request for the home page ('/').")
     
-    # Check if the token exists before attempting any API calls
-    if not HA_TOKEN:
-        return "Error: Home Assistant token is not available.", 500
-
     try:
-        # Make a GET request to the Home Assistant API to get all states
-        app.logger.info("Making API call to fetch Home Assistant states...")
-        response = requests.get(f'{HA_URL}states', headers=HEADERS, timeout=10)
-        response.raise_for_status()  # This will raise an HTTPError for bad responses (4xx or 5xx)
+        app.logger.info("Using mock data to render the page for diagnosis.")
         
-        states = response.json()
-        app.logger.info(f"Successfully fetched {len(states)} states from Home Assistant.")
-
-        # Filter the states to find only Broadlink remote devices
+        # --- MOCK DATA ---
         broadlink_devices = [
-            state for state in states 
-            if state['entity_id'].startswith('remote.') and 'broadlink' in state['entity_id']
+            {'entity_id': 'remote.broadlink_rm4_pro_1'},
+            {'entity_id': 'remote.broadlink_mini_2'},
+            {'entity_id': 'remote.my_broadlink_device_3'}
         ]
-        app.logger.info(f"Found {len(broadlink_devices)} Broadlink remote devices.")
+        # --- END MOCK DATA ---
+        
+        app.logger.info(f"Found {len(broadlink_devices)} Broadlink remote devices (mock data).")
 
-        # Render the HTML template, passing the list of devices
+        # Render the HTML template, passing the mock list of devices
         return render_template('index.html', devices=broadlink_devices)
-    except requests.exceptions.RequestException as e:
-        # Log and return a user-friendly error message if the API call fails
-        app.logger.error(f"Error connecting to Home Assistant API: {e}")
-        return f"Error connecting to Home Assistant: {e}", 500
+    except Exception as e:
+        # Catch any potential rendering errors
+        app.logger.error(f"Error rendering the page with mock data: {e}")
+        return f"Error rendering the page: {e}", 500
 
 @app.route('/learn_mode', methods=['POST'])
 def learn_mode():
-    """Calls the Home Assistant service to put a specific device in learning mode."""
+    """Mocks the API call to put a device in learning mode."""
     entity_id = request.json.get('entity_id')
     app.logger.info(f"Received request to start learning mode for {entity_id}.")
 
     if not entity_id:
         return jsonify({'status': 'error', 'message': 'No entity_id provided.'}), 400
 
-    data = {"entity_id": entity_id}
-    
-    try:
-        # Call the `remote.learn_command` service via the HA API
-        response = requests.post(
-            f'{HA_URL}services/remote/learn_command', 
-            headers=HEADERS, 
-            json=data,
-            timeout=10
-        )
-        response.raise_for_status()
-        
-        app.logger.info(f"Successfully activated learning mode for {entity_id}.")
-        return jsonify({
-            'status': 'success', 
-            'message': f'Learning mode activated for {entity_id}. Press a button on your remote.'
-        })
-    except requests.exceptions.RequestException as e:
-        app.logger.error(f"Failed to call service for {entity_id}: {e}")
-        return jsonify({'status': 'error', 'message': f'Failed to call service: {e}'}), 500
+    app.logger.info(f"MOCK API call: Activated learning mode for {entity_id}.")
+    return jsonify({
+        'status': 'success', 
+        'message': f'Learning mode activated for {entity_id} (mock). Press a button on your remote.'
+    })
 
 @app.route('/generate_yaml', methods=['POST'])
 def generate_yaml():
-    """Generates a YAML automation for a learned command."""
+    """Mocks the YAML generation."""
     device_id = request.json.get('device_id')
     command_name = request.json.get('command_name')
     app.logger.info(f"Received request to generate YAML for device {device_id} with command '{command_name}'.")
@@ -104,23 +68,15 @@ def generate_yaml():
 
     # A simple YAML template for the automation
     yaml_template = f"""
+# This YAML was generated by the diagnostic app
 - id: 'generated_ir_command_{command_name}'
   alias: 'IR Command - {command_name.replace("_", " ").title()}'
-  trigger:
-    - platform: state
-      entity_id: remote.{device_id.split('.')[1]}
-      to: 'learning_command_complete'
-  action:
-    - service: remote.send_command
-      data:
-        entity_id: remote.{device_id.split('.')[1]}
-        command:
-          - '{command_name}'
     """
     
-    app.logger.info("Successfully generated YAML template.")
+    app.logger.info("Successfully generated YAML template (mock).")
     return jsonify({'status': 'success', 'yaml': yaml_template})
 
 if __name__ == '__main__':
     # Ensure the Flask app runs on the correct host and port for Ingress
+    app.logger.info("Attempting to run Flask app...")
     app.run(host='0.0.0.0', port=8089, debug=True)
