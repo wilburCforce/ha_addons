@@ -76,4 +76,4 @@ def generate_yaml():
     return jsonify({'status': 'success', 'yaml': yaml_template})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=8089, debug=True)
