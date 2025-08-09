@@ -1,0 +1,20 @@
+name: "IR Builder"
+version: "0.1"
+slug: "ir_builder"
+description: "An add-on to help build an automation for an IR blaster remote"
+homeassistant_api: true
+hassio_api: true
+arch:
+  - amd64
+  - armhf
+  - aarch64
+  - armv7
+url: "https://github.com/wilburCforce/ha_addons"
+startup: "application"
+ports:
+  8099/tcp: null # The port your web server will listen on. null means Home Assistant will assign a port.
+ports_description:
+  8099/tcp: "Web server IR Builder"
+ingress: true
+panel_icon: mdi:robot-happy
+init: false

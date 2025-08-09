@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Broadlink Automation Helper</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .container { max-width: 800px; margin: auto; }
+        .card { border: 1px solid #ddd; padding: 20px; margin-bottom: 20px; border-radius: 5px; }
+        button { padding: 10px 15px; cursor: pointer; }
+        textarea { width: 100%; height: 200px; margin-top: 10px; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Broadlink IR Automation Helper</h1>
+
+        <div class="card">
+            <h2>1. Select Your Broadlink Device</h2>
+            <p>Choose the Broadlink RM4 device you want to use for learning a new IR command.</p>
+            <select id="device-select">
+                {% for device in devices %}
+                <option value="{{ device.entity_id }}">{{ device.attributes.friendly_name }} ({{ device.entity_id }})</option>
+                {% endfor %}
+            </select>
+            <p id="device-status"></p>
+        </div>
+
+        <div class="card">
+            <h2>2. Learn a New Command</h2>
+            <p>Click the button below to put your selected device into learning mode. Then, press a button on your physical remote.</p>
+            <button onclick="startLearning()">Start Learning</button>
+            <p id="learning-status"></p>
+        </div>
+
+        <div class="card">
+            <h2>3. Generate Automation YAML</h2>
+            <p>Provide a name for the new command (e.g., "tv_power_on") and generate the YAML for your automation.</p>
+            <input type="text" id="command-name" placeholder="e.g., tv_power_on">
+            <button onclick="generateYaml()">Generate YAML</button>
+            <pre><textarea id="yaml-output" readonly></textarea></pre>
+            <button onclick="copyYaml()">Copy YAML</button>
+        </div>
+    </div>
+
+    <script>
+        const deviceSelect = document.getElementById('device-select');
+        const learningStatus = document.getElementById('learning-status');
+        const yamlOutput = document.getElementById('yaml-output');
+        const commandNameInput = document.getElementById('command-name');
+        
+        async function startLearning() {
+            const entityId = deviceSelect.value;
+            learningStatus.className = '';
+            learningStatus.innerText = 'Activating learning mode...';
+
+            try {
+                const response = await fetch('/learn_mode', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ entity_id: entityId })
+                });
+                const data = await response.json();
+                if (data.status === 'success') {
+                    learningStatus.className = 'success';
+                    learningStatus.innerText = data.message;
+                } else {
+                    learningStatus.className = 'error';
+                    learningStatus.innerText = data.message;
+                }
+            } catch (error) {
+                learningStatus.className = 'error';
+                learningStatus.innerText = `An error occurred: ${error}`;
+            }
+        }
+
+        async function generateYaml() {
+            const deviceId = deviceSelect.value;
+            const commandName = commandNameInput.value;
+
+            if (!commandName) {
+                alert('Please enter a command name.');
+                return;
+            }
+
+            try {
+                const response = await fetch('/generate_yaml', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ device_id: deviceId, command_name: commandName })
+                });
+                const data = await response.json();
+                if (data.status === 'success') {
+                    yamlOutput.value = data.yaml.trim();
+                } else {
+                    alert(data.message);
+                }
+            } catch (error) {
+                alert(`An error occurred: ${error}`);
+            }
+        }
+        
+        function copyYaml() {
+            yamlOutput.select();
+            document.execCommand('copy');
+            alert('YAML copied to clipboard!');
+        }
+    </script>
+</body>
+</html>
