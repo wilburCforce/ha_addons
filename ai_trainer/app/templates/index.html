@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Trainer</title>
+</head>
+<body>
+    <h1>Crowdsource Home Automation Data</h1>
+    <p>Select your best automations and provide a brief description to help train a custom AI model.</p>
+    <form action="/submit" method="post">
+        {% for automation in automations %}
+        <div>
+            <input type="checkbox" id="{{ automation.entity_id }}" name="selected_automations" value="{{ automation.entity_id }}">
+            <label for="{{ automation.entity_id }}">
+                <strong>{{ automation.alias }}</strong> ({{ automation.entity_id }})
+            </label>
+            <br>
+            <textarea name="description_{{ automation.entity_id }}" rows="4" cols="50" placeholder="Describe the purpose of this automation and why you think it's a good example."></textarea>
+        </div>
+        {% endfor %}
+        <br>
+        <button type="submit">Submit Selected Automations</button>
+    </form>
+</body>
+</html>

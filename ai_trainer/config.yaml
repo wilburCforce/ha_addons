@@ -1,0 +1,20 @@
+name: "AI Trainer Data Collector"
+version: "0.1.15"
+slug: "automation_data_collector"
+description: "An add-on to help crowdsource high-quality Home Assistant automations for AI model training."
+homeassistant_api: true
+hassio_api: true
+arch:
+  - amd64
+  - armhf
+  - aarch64
+  - armv7
+url: "https://github.com/wilburCforce/ai_trainer"
+startup: "application"
+ports:
+  8099/tcp: null # The port your web server will listen on. null means Home Assistant will assign a port.
+ports_description:
+  8099/tcp: "Web server for data collection UI"
+ingress: true
+panel_icon: mdi:robot-happy
+init: false
