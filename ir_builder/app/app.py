@@ -11,6 +11,9 @@ app = Flask(__name__)
 HA_URL = os.environ.get('HA_URL', 'http://supervisor/core/api/')
 #HA_TOKEN = os.environ.get('HA_TOKEN', 'YOUR_LONG_LIVED_ACCESS_TOKEN')
 HA_TOKEN = os.environ.get('SUPERVISOR_TOKEN')
+app.logger.info(f"SUPERVISOR_TOKEN is set: {bool(TOKEN)}")
+app.logger.info(f"Using token: {TOKEN[:5]}...")
+
 HEADERS = {
     'Authorization': f'Bearer {HA_TOKEN}',
     'Content-Type': 'application/json',
