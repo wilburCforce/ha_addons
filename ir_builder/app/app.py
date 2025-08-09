@@ -2,6 +2,7 @@ import os
 import requests
 import json
 from flask import Flask, render_template, request, redirect, url_for
+import logging
 
 # Configure basic logging for the application
 logging.basicConfig(level=logging.INFO)
