@@ -13,7 +13,7 @@ COPY requirements.txt .
 RUN /opt/venv/bin/pip install --no-cache-dir -r requirements.txt
 
 # Copy your application files
-COPY app /app
+COPY app/ /app/
 
 # Set the PATH to include the virtual environment's executables
 ENV PATH="/opt/venv/bin:$PATH"
