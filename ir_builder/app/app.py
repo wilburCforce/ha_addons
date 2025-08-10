@@ -4,7 +4,6 @@ import requests
 import json
 import os
 import logging
-from homeassistant.components.remote import RemoteEntityFeature
 
 # Configure basic logging for the application
 logging.basicConfig(level=logging.INFO)
@@ -52,7 +51,7 @@ def index():
         # Filter the states to find only Broadlink remote devices
         broadlink_devices = [
             state for state in states 
-            if state['entity_id'].startswith('remote.') and (state['attributes'].get('supported_features', 0) & RemoteEntityFeature.LEARN_COMMAND) #and 'broadlink' in state['entity_id']
+            if state['entity_id'].startswith('remote.') and (state['attributes'].get('supported_features', 0) & 1) #and 'broadlink' in state['entity_id']
         ]
         app.logger.info(f"Found {len(broadlink_devices)} Broadlink remote devices.")
         app.logger.info(f"Broadlink devices JSON: {json.dumps(broadlink_devices, indent=4)}")
