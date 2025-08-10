@@ -98,6 +98,7 @@ def index():
         
         states = response.json()
         app.logger.info(f"Successfully fetched {len(states)} states from Home Assistant.")
+        app.logger.info(f"STATES JSON: {json.dumps(states, indent=4)}")
 
         # Filter the states to find only Broadlink remote devices
         broadlink_devices = [
