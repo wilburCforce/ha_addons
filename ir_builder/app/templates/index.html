@@ -101,7 +101,7 @@
         <div class="card">
             <h2>1. Select Your Broadlink Device</h2>
             <p>Choose the Broadlink RM4 device you want to use for learning a new IR command.</p>
-            <select id="device-select">
+            <select id="device-select" class="form-control">
                 {% for device in devices %}
                 <option value="{{ device.entity_id }}">{{ device.attributes.friendly_name }} ({{ device.entity_id }})</option>
                 {% endfor %}
@@ -111,18 +111,20 @@
 
         <div class="card">
             <h2>2. Learn a New Command</h2>
-            <p>Click the button below to put your selected device into learning mode. Then, press a button on your physical remote.</p>
-            <button onclick="startLearning()">Start Learning</button>
+            <p>Provide a name for the command you are about to learn (e.g., "tv_power_on") and click "Start Learning".</p>
+            <!-- ADDED: The command name input field is now here -->
+            <input type="text" id="command-name" placeholder="e.g., tv_power_on" class="form-control">
+            <button onclick="startLearning()" class="btn btn-primary">Start Learning</button>
             <p id="learning-status"></p>
         </div>
 
         <div class="card">
             <h2>3. Generate Automation YAML</h2>
-            <p>Provide a name for the new command (e.g., "tv_power_on") and generate the YAML for your automation.</p>
-            <input type="text" id="command-name" placeholder="e.g., tv_power_on">
-            <button onclick="generateYaml()">Generate YAML</button>
-            <pre><textarea id="yaml-output" readonly></textarea></pre>
-            <button onclick="copyYaml()">Copy YAML</button>
+            <p>After learning is complete, you can generate the YAML for your automation.</p>
+            <!-- REMOVED: The command name input field was here -->
+            <button onclick="generateYaml()" class="btn btn-primary">Generate YAML</button>
+            <pre><textarea id="yaml-output" readonly class="form-control"></textarea></pre>
+            <button onclick="copyYaml()" class="btn">Copy YAML</button>
         </div>
     </div>
 
@@ -135,6 +137,16 @@
         
         async function startLearning() {
             const entityId = deviceSelect.value;
+            const commandName = commandNameInput.value.trim(); // ADDED: get the command name
+
+            // ADDED: Check if the command name is provided
+            if (!commandName) {
+                learningStatus.className = 'error';
+                learningStatus.innerText = 'Please enter a command name first.';
+                commandNameInput.focus();
+                return;
+            }
+
             learningStatus.className = '';
             learningStatus.innerText = 'Activating learning mode...';
 
@@ -142,12 +154,14 @@
                 const response = await fetch(`${baseUrl}learn_mode`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ entity_id: entityId })
+                    // UPDATED: Include the command name in the request body
+                    body: JSON.stringify({ entity_id: entityId, command: commandName }) 
                 });
                 const data = await response.json();
                 if (data.status === 'success') {
                     learningStatus.className = 'success';
-                    learningStatus.innerText = data.message;
+                    // UPDATED: Use the command name in the success message
+                    learningStatus.innerText = `Success! ${data.message} to learn "${commandName}".`;
                 } else {
                     learningStatus.className = 'error';
                     learningStatus.innerText = data.message;

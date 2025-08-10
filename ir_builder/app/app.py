@@ -67,12 +67,15 @@ def index():
 def learn_mode():
     """Calls the Home Assistant service to put a specific device in learning mode."""
     entity_id = request.json.get('entity_id')
-    app.logger.info(f"Received request to start learning mode for {entity_id}.")
+    command = request.json.get('command')
+    app.logger.info(f"Received request to start learning mode for {entity_id} {command}.")
 
-    if not entity_id:
+    if not entity_id or not command:
         return jsonify({'status': 'error', 'message': 'No entity_id provided.'}), 400
 
-    data = {"entity_id": entity_id}
+    data = {"entity_id": entity_id,
+        "command": command
+    }
 
     # --- ADDED CODE FOR TRACING ---
     app.logger.info(f"Calling HA API: URL='{HA_URL}services/remote/learn_command'")
