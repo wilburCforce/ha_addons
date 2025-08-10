@@ -131,6 +131,7 @@
         const learningStatus = document.getElementById('learning-status');
         const yamlOutput = document.getElementById('yaml-output');
         const commandNameInput = document.getElementById('command-name');
+        const baseUrl = window.location.pathname;
         
         async function startLearning() {
             const entityId = deviceSelect.value;
@@ -138,7 +139,7 @@
             learningStatus.innerText = 'Activating learning mode...';
 
             try {
-                const response = await fetch('/learn_mode', {
+                const response = await fetch(`${baseUrl}learn_mode`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ entity_id: entityId })
@@ -167,7 +168,7 @@
             }
 
             try {
-                const response = await fetch('/generate_yaml', {
+                const response = await fetch(`${baseUrl}generate_yaml`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ device_id: deviceId, command_name: commandName })
