@@ -73,6 +73,12 @@ def learn_mode():
         return jsonify({'status': 'error', 'message': 'No entity_id provided.'}), 400
 
     data = {"entity_id": entity_id}
+
+    # --- ADDED CODE FOR TRACING ---
+    app.logger.info(f"Calling HA API: URL='{HA_URL}services/remote/learn_command'")
+    app.logger.info(f"Headers: {HEADERS}")
+    app.logger.info(f"Payload: {json.dumps(data)}")
+    # -----------------------------
     
     try:
         # Call the `remote.learn_command` service via the HA API
