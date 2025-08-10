@@ -33,38 +33,45 @@ HEADERS = {
 
 def _get_mac_address_from_entity_id(entity_id):
     """
-    Finds the MAC address for a given entity_id by querying the Home Assistant device registry.
+    Finds the MAC address for a given entity_id by querying the Home Assistant 
+    entity and device registries.
     """
-    app.logger.info(f"Attempting to find MAC address for {entity_id} from device registry...")
+    app.logger.info(f"Attempting to find MAC address for {entity_id}...")
     try:
-        response = requests.get(f'{HA_URL}config/device_registry', headers=HEADERS, timeout=10)
-        response.raise_for_status()
-        device_registry = response.json()
+        # Step 1: Query the entity registry to get the device_id
+        entity_response = requests.get(f'{HA_URL}config/entity_registry', headers=HEADERS, timeout=10)
+        entity_response.raise_for_status()
+        entity_registry = entity_response.json()
+
+        app.logger.info(f"entity_registry response: {json.dumps(entity_registry, indent=4)}")
         
-        # Home Assistant's device registry is a list of dictionaries
+        device_id = None
+        for entity_entry in entity_registry:
+            if entity_entry.get('entity_id') == entity_id:
+                device_id = entity_entry.get('device_id')
+                break
+
+        if not device_id:
+            app.logger.warning(f"Could not find device_id for entity {entity_id} in entity registry.")
+            return None
+
+        # Step 2: Query the device registry using the found device_id to get the MAC address
+        device_response = requests.get(f'{HA_URL}config/device_registry', headers=HEADERS, timeout=10)
+        device_response.raise_for_status()
+        device_registry = device_response.json()
+
+        app.logger.info(f"device_registry response: {json.dumps(device_registry, indent=4)}")
+
         for device_entry in device_registry:
-            if 'connections' in device_entry:
-                for connection in device_entry['connections']:
-                    if len(connection) == 2 and connection[0] == 'mac':
-                        # The mac address in the connections is formatted as "aa:bb:cc:dd:ee:ff"
-                        # We need to find the device that has an entity with the given entity_id.
-                        # This requires another API call to get all entities.
-                        # For simplicity and to avoid multiple API calls, we'll assume the entity ID 
-                        # is enough to match to a device name, but a more robust solution
-                        # would query the entity registry as well.
-                        # For now, let's look for a device_id
-                        device_id = device_entry.get('id')
-                        if device_id:
-                            # Let's get the list of entities for this device from the entity registry
-                            entity_registry_response = requests.get(f'{HA_URL}config/entity_registry', headers=HEADERS, timeout=10)
-                            entity_registry_response.raise_for_status()
-                            entity_registry = entity_registry_response.json()
-                            for entity_entry in entity_registry:
-                                if entity_entry.get('device_id') == device_id and entity_entry.get('entity_id') == entity_id:
-                                    # Found the matching device, return its mac address
-                                    return connection[1].replace(':', '').upper()
+            if device_entry.get('id') == device_id:
+                if 'connections' in device_entry:
+                    for connection in device_entry['connections']:
+                        if len(connection) == 2 and connection[0] == 'mac':
+                            # The MAC address needs to be formatted for the storage file name.
+                            return connection[1].replace(':', '').upper()
+
     except requests.exceptions.RequestException as e:
-        app.logger.error(f"Error fetching device registry from Home Assistant: {e}")
+        app.logger.error(f"Error fetching registries from Home Assistant: {e}")
     
     app.logger.warning(f"Could not find MAC address for entity {entity_id}.")
     return None
