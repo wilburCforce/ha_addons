@@ -111,8 +111,9 @@
 
         <div class="card">
             <h2>2. Learn a New Command</h2>
-            <p>Provide a name for the command you are about to learn (e.g., "tv_power_on") and click "Start Learning".</p>
-            <!-- ADDED: The command name input field is now here -->
+            <p>Provide a name for the device and command you are about to learn, then click "Start Learning".</p>
+            <!-- ADDED: The device name input field -->
+            <input type="text" id="device-name" placeholder="e.g., tv_remote" class="form-control">
             <input type="text" id="command-name" placeholder="e.g., tv_power_on" class="form-control">
             <button onclick="startLearning()" class="btn btn-primary">Start Learning</button>
             <p id="learning-status"></p>
@@ -132,18 +133,24 @@
         const deviceSelect = document.getElementById('device-select');
         const learningStatus = document.getElementById('learning-status');
         const yamlOutput = document.getElementById('yaml-output');
+        const deviceNameInput = document.getElementById('device-name');
         const commandNameInput = document.getElementById('command-name');
         const baseUrl = window.location.pathname;
         
         async function startLearning() {
             const entityId = deviceSelect.value;
+            const deviceName = deviceNameInput.value.trim();
             const commandName = commandNameInput.value.trim(); // ADDED: get the command name
 
-            // ADDED: Check if the command name is provided
-            if (!commandName) {
+            if (!deviceName || !commandName) {
                 learningStatus.className = 'error';
-                learningStatus.innerText = 'Please enter a command name first.';
-                commandNameInput.focus();
+                learningStatus.innerText = 'Please enter both a device and a command name.';
+                // Focus on the first empty field
+                if (!deviceName) {
+                    deviceNameInput.focus();
+                } else {
+                    commandNameInput.focus();
+                }
                 return;
             }
 
@@ -155,7 +162,11 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     // UPDATED: Include the command name in the request body
-                    body: JSON.stringify({ entity_id: entityId, command: commandName }) 
+                    body: JSON.stringify({
+                        entity_id: entityId,
+                        device: deviceName,
+                        command: commandName
+                    }) 
                 });
                 const data = await response.json();
                 if (data.status === 'success') {

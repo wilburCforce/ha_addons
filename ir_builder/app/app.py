@@ -67,6 +67,7 @@ def index():
 def learn_mode():
     """Calls the Home Assistant service to put a specific device in learning mode."""
     entity_id = request.json.get('entity_id')
+    device = request.json.get('device')
     command = request.json.get('command')
     app.logger.info(f"Received request to start learning mode for {entity_id} {command}.")
 
@@ -74,6 +75,7 @@ def learn_mode():
         return jsonify({'status': 'error', 'message': 'No entity_id provided.'}), 400
 
     data = {"entity_id": entity_id,
+        "device": device,
         "command": command
     }
 
