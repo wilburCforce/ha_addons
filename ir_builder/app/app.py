@@ -51,7 +51,7 @@ def index():
         # Filter the states to find only Broadlink remote devices
         broadlink_devices = [
             state for state in states 
-            if state['entity_id'].startswith('remote.') and #'broadlink' in state['entity_id']
+            if state['entity_id'].startswith('remote.') #and 'broadlink' in state['entity_id']
         ]
         app.logger.info(f"Found {len(broadlink_devices)} Broadlink remote devices.")
         app.logger.info(f"Broadlink devices JSON: {json.dumps(broadlink_devices, indent=4)}")
