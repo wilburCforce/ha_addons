@@ -16,6 +16,7 @@ app.logger.info("Starting IR Builder Flask application...")
 # This uses the SUPERVISOR_TOKEN which is automatically provided to add-ons.
 HA_URL = os.environ.get('HA_URL', 'http://supervisor/core/api/')
 HA_TOKEN = os.environ.get('SUPERVISOR_TOKEN')
+BROADLINK_STORAGE_PATH = '/config/.storage/broadlink_remote_{mac}_codes.json'
 
 # Log the token status for debugging
 if HA_TOKEN:
@@ -30,6 +31,50 @@ HEADERS = {
     'Content-Type': 'application/json',
 }
 
+def _get_mac_address_from_entity_id(entity_id):
+    """
+    Finds the MAC address for a given entity_id by querying the Home Assistant device registry.
+    """
+    app.logger.info(f"Attempting to find MAC address for {entity_id} from device registry...")
+    try:
+        response = requests.get(f'{HA_URL}config/device_registry', headers=HEADERS, timeout=10)
+        response.raise_for_status()
+        device_registry = response.json()
+        
+        # Home Assistant's device registry is a list of dictionaries
+        for device_entry in device_registry:
+            if 'connections' in device_entry:
+                for connection in device_entry['connections']:
+                    if len(connection) == 2 and connection[0] == 'mac':
+                        # The mac address in the connections is formatted as "aa:bb:cc:dd:ee:ff"
+                        # We need to find the device that has an entity with the given entity_id.
+                        # This requires another API call to get all entities.
+                        # For simplicity and to avoid multiple API calls, we'll assume the entity ID 
+                        # is enough to match to a device name, but a more robust solution
+                        # would query the entity registry as well.
+                        # For now, let's look for a device_id
+                        device_id = device_entry.get('id')
+                        if device_id:
+                            # Let's get the list of entities for this device from the entity registry
+                            entity_registry_response = requests.get(f'{HA_URL}config/entity_registry', headers=HEADERS, timeout=10)
+                            entity_registry_response.raise_for_status()
+                            entity_registry = entity_registry_response.json()
+                            for entity_entry in entity_registry:
+                                if entity_entry.get('device_id') == device_id and entity_entry.get('entity_id') == entity_id:
+                                    # Found the matching device, return its mac address
+                                    return connection[1].replace(':', '').upper()
+    except requests.exceptions.RequestException as e:
+        app.logger.error(f"Error fetching device registry from Home Assistant: {e}")
+    
+    app.logger.warning(f"Could not find MAC address for entity {entity_id}.")
+    return None
+
+def _get_broadlink_file_path(mac_address):
+    """
+    Generates the expected file path for a Broadlink device's storage file.
+    """
+    return BROADLINK_STORAGE_PATH.format(mac=mac_address)
+
 @app.route('/')
 def index():
     """Renders the main page and fetches Broadlink remote devices from Home Assistant."""
@@ -40,7 +85,6 @@ def index():
         return "Error: Home Assistant token is not available.", 500
 
     try:
-        # Make a GET request to the Home Assistant API to get all states
         app.logger.info("Making API call to fetch Home Assistant states...")
         response = requests.get(f'{HA_URL}states', headers=HEADERS, timeout=10)
         response.raise_for_status()  # This will raise an HTTPError for bad responses (4xx or 5xx)
@@ -53,15 +97,95 @@ def index():
             state for state in states 
             if state['entity_id'].startswith('remote.') and (state['attributes'].get('supported_features', 0) & 1) #and 'broadlink' in state['entity_id']
         ]
+        enhanced_devices = []
+        for device in broadlink_devices:
+            mac_address = _get_mac_address_from_entity_id(device['entity_id'])
+            if mac_address:
+                # Assuming the device name is the friendly_name from the state
+                device_name = device['attributes'].get('friendly_name', device['entity_id'])
+                enhanced_devices.append({
+                    'entity_id': device['entity_id'],
+                    'name': device_name,
+                    'mac': mac_address
+                })
+                
         app.logger.info(f"Found {len(broadlink_devices)} Broadlink remote devices.")
+        app.logger.info(f"Found {len(enhanced_devices)} Broadlink remote devices with MAC addresses.")
         app.logger.info(f"Broadlink devices JSON: {json.dumps(broadlink_devices, indent=4)}")
 
         # Render the HTML template, passing the list of devices
         return render_template('index.html', devices=broadlink_devices)
     except requests.exceptions.RequestException as e:
-        # Log and return a user-friendly error message if the API call fails
         app.logger.error(f"Error connecting to Home Assistant API: {e}")
         return f"Error connecting to Home Assistant: {e}", 500
+@app.route('/get_codes', methods=['POST'])
+def get_codes():
+    """
+    Retrieves learned IR commands from the Broadlink device's .storage file.
+    """
+    entity_id = request.json.get('entity_id')
+    app.logger.info(f"Received request to get learned codes for entity {entity_id}.")
+
+    if not entity_id:
+        return jsonify({'status': 'error', 'message': 'Missing entity_id.'}), 400
+
+    mac_address = _get_mac_address_from_entity_id(entity_id)
+    if not mac_address:
+        return jsonify({'status': 'error', 'message': f'Could not find MAC address for {entity_id}.'}), 404
+
+    file_path = _get_broadlink_file_path(mac_address)
+    
+    if not os.path.exists(file_path):
+        app.logger.warning(f"Storage file not found for {entity_id} at {file_path}. Assuming no learned codes.")
+        return jsonify({'status': 'success', 'devices': {}}), 200
+
+    try:
+        # Read the entire file
+        with open(file_path, 'r') as f:
+            data = json.load(f)
+        app.logger.info(f"Successfully read and parsed codes for {entity_id}.")
+        return jsonify({'status': 'success', 'devices': data.get('data', {}).get('devices', {})})
+    except (IOError, json.JSONDecodeError) as e:
+        app.logger.error(f"Error reading or parsing storage file at {file_path}: {e}")
+        return jsonify({'status': 'error', 'message': 'Failed to read learned codes file.'}), 500
+
+@app.route('/delete_command', methods=['POST'])
+def delete_command():
+    """
+    Deletes a specific learned command by calling the Home Assistant remote.learn_command service
+    with the 'delete_command' payload.
+    """
+    entity_id = request.json.get('entity_id')
+    device_name = request.json.get('device')
+    command_name = request.json.get('command')
+    app.logger.info(f"Received request to delete command '{command_name}' for device '{device_name}' on entity {entity_id}.")
+
+    if not all([entity_id, device_name, command_name]):
+        return jsonify({'status': 'error', 'message': 'Missing required parameters (entity_id, device, command).'}), 400
+    
+    # Construct the payload to call the Home Assistant service
+    data = {
+        "entity_id": entity_id,
+        "device": device_name,
+        "command": command_name # This is the command to be deleted
+    }
+
+    try:
+        # Call the remote.learn_command service via the HA API
+        # The service internally handles the deletion based on the payload.
+        response = requests.post(
+            f'{HA_URL}services/remote/delete_command', 
+            headers=HEADERS, 
+            json=data,
+            timeout=10
+        )
+        response.raise_for_status()
+
+        app.logger.info(f"Successfully sent delete command request for '{command_name}' to Home Assistant.")
+        return jsonify({'status': 'success', 'message': f"Command '{command_name}' deletion request sent to Home Assistant."})
+    except requests.exceptions.RequestException as e:
+        app.logger.error(f"Failed to call service to delete command: {e}")
+        return jsonify({'status': 'error', 'message': f'Failed to call service: {e}'}), 500
 
 @app.route('/learn_mode', methods=['POST'])
 def learn_mode():
