@@ -35,6 +35,9 @@ HEADERS = {
     'Content-Type': 'application/json',
 }
 
+WS_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiIwMDU1YjMzNjI5NWY0OGFlOGU3NTRkNjg2MzAwOTM0YSIsImlhdCI6MTc1NDkzMjUwNCwiZXhwIjoyMDcwMjkyNTA0fQ.Ht05mvo_owQmzaJBgor26DxtZXjx5zDArLkTTB6Ei34"
+
+
 def _get_device_registry_via_websocket():
     """
     Connects to the Home Assistant WebSocket API, retrieves the device registry,
@@ -42,29 +45,36 @@ def _get_device_registry_via_websocket():
     """
     app.logger.info("Attempting to get device registry via WebSocket...")
     ha_ws_url = 'ws://supervisor/core/api/websocket'
-    WS_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiIwMDU1YjMzNjI5NWY0OGFlOGU3NTRkNjg2MzAwOTM0YSIsImlhdCI6MTc1NDkzMjUwNCwiZXhwIjoyMDcwMjkyNTA0fQ.Ht05mvo_owQmzaJBgor26DxtZXjx5zDArLkTTB6Ei34"
 
     try:
-        # Use websocket.create_connection() from the new library
         ws = websocket.create_connection(ha_ws_url)
+        
+        # 1. Wait for the initial 'auth_required' message from HA
+        auth_required_response = json.loads(ws.recv())
+        app.logger.info(f"Initial HA WebSocket message: {json.dumps(auth_required_response, indent=2)}")
 
-        # 1. Authenticate with Home Assistant
+        if auth_required_response.get('type') != 'auth_required':
+            app.logger.error(f"Unexpected initial WebSocket response from Home Assistant.{json.dumps(auth_required_response, indent=2)}")
+            return None
+
+        # 2. Respond with the authentication payload
         auth_payload = {
             "type": "auth",
             "access_token": WS_TOKEN
         }
         ws.send(json.dumps(auth_payload))
-        auth_response = json.loads(ws.recv())
-        app.logger.info(f"WebSocket...:{json.dumps(auth_response, indent=2)}")
 
-        if auth_response.get('type') != 'auth_ok':
+        # 3. Wait for the 'auth_ok' message to confirm authentication
+        auth_ok_response = json.loads(ws.recv())
+        app.logger.info(f"HA WebSocket auth response: {json.dumps(auth_ok_response, indent=2)}")
+
+        if auth_ok_response.get('type') != 'auth_ok':
             app.logger.error("WebSocket authentication failed.")
-            ws.close()
             return None
         
         app.logger.info("Successfully authenticated with Home Assistant WebSocket.")
 
-        # 2. Send the command to get the device registry
+        # 4. Send the command to get the device registry
         request_id = 1
         request_payload = {
             "id": request_id,
@@ -72,10 +82,9 @@ def _get_device_registry_via_websocket():
         }
         ws.send(json.dumps(request_payload))
 
-        # 3. Listen for the response
+        # 5. Listen for the response
         while True:
             response = json.loads(ws.recv())
-            # Log the full response for debugging purposes
             app.logger.info(f"Received HA WebSocket message: {json.dumps(response, indent=2)}")
 
             if response.get('id') == request_id and response.get('type') == 'result':
