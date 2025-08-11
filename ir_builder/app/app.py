@@ -82,7 +82,7 @@ def _get_device_registry_via_websocket():
         # 5. Listen for the response
         while True:
             response = json.loads(ws.recv())
-            app.logger.info(f"Received HA WebSocket message: {json.dumps(response, indent=2)}")
+            #app.logger.info(f"Received HA WebSocket message: {json.dumps(response, indent=2)}")
 
             if response.get('id') == request_id and response.get('type') == 'result':
                 if response.get('success'):
@@ -130,7 +130,7 @@ def _get_mac_address_from_entity_id(entity_id):
             app.logger.error("Failed to retrieve device registry via WebSocket.")
             return None
 
-        app.logger.info(f"device_registry response: {json.dumps(device_registry, indent=4)}")
+        #app.logger.info(f"device_registry response: {json.dumps(device_registry, indent=4)}")
 
         for device_entry in device_registry:
             if device_entry.get('id') == device_id:
