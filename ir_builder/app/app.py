@@ -60,7 +60,7 @@ def _get_device_registry_via_websocket():
         # 2. Respond with the authentication payload
         auth_payload = {
             "type": "auth",
-            "access_token": WS_TOKEN
+            "access_token": HA_TOKEN
         }
         ws.send(json.dumps(auth_payload))
 
