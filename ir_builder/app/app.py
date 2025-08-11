@@ -35,9 +35,6 @@ HEADERS = {
     'Content-Type': 'application/json',
 }
 
-WS_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiIwMDU1YjMzNjI5NWY0OGFlOGU3NTRkNjg2MzAwOTM0YSIsImlhdCI6MTc1NDkzMjUwNCwiZXhwIjoyMDcwMjkyNTA0fQ.Ht05mvo_owQmzaJBgor26DxtZXjx5zDArLkTTB6Ei34"
-
-
 def _get_device_registry_via_websocket():
     """
     Connects to the Home Assistant WebSocket API, retrieves the device registry,
@@ -78,7 +75,7 @@ def _get_device_registry_via_websocket():
         request_id = 1
         request_payload = {
             "id": request_id,
-            "type": "config/device_registry/get"
+            "type": "config/device_registry/list"
         }
         ws.send(json.dumps(request_payload))
 
