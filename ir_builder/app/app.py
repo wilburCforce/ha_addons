@@ -42,6 +42,7 @@ def _get_device_registry_via_websocket():
     """
     app.logger.info("Attempting to get device registry via WebSocket...")
     ha_ws_url = 'ws://supervisor/core/api/websocket'
+    WS_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiIwMDU1YjMzNjI5NWY0OGFlOGU3NTRkNjg2MzAwOTM0YSIsImlhdCI6MTc1NDkzMjUwNCwiZXhwIjoyMDcwMjkyNTA0fQ.Ht05mvo_owQmzaJBgor26DxtZXjx5zDArLkTTB6Ei34"
 
     try:
         # Use websocket.create_connection() from the new library
@@ -50,10 +51,11 @@ def _get_device_registry_via_websocket():
         # 1. Authenticate with Home Assistant
         auth_payload = {
             "type": "auth",
-            "access_token": HA_TOKEN
+            "access_token": WS_TOKEN
         }
         ws.send(json.dumps(auth_payload))
         auth_response = json.loads(ws.recv())
+        app.logger.info(f"WebSocket...:{json.dumps(auth_response, indent=2)}")
 
         if auth_response.get('type') != 'auth_ok':
             app.logger.error("WebSocket authentication failed.")
