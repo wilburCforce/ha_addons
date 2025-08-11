@@ -99,21 +99,21 @@ def _get_mac_address_from_entity_id(entity_id):
     app.logger.info(f"Attempting to find MAC address for {entity_id}...")
     try:
         # Step 1: Query the entity registry to get the device_id
-        entity_response = requests.get(f'{HA_URL}config/entity_registry', headers=HEADERS, timeout=10)
-        entity_response.raise_for_status()
-        entity_registry = entity_response.json()
+        #entity_response = requests.get(f'{HA_URL}config/entity_registry', headers=HEADERS, timeout=10)
+        #entity_response.raise_for_status()
+        #entity_registry = entity_response.json()
 
-        app.logger.info(f"entity_registry response: {json.dumps(entity_registry, indent=4)}")
+        #app.logger.info(f"entity_registry response: {json.dumps(entity_registry, indent=4)}")
         
         device_id = None
-        for entity_entry in entity_registry:
-            if entity_entry.get('entity_id') == entity_id:
-                device_id = entity_entry.get('device_id')
-                break
+        #for entity_entry in entity_registry:
+        #    if entity_entry.get('entity_id') == entity_id:
+        #        device_id = entity_entry.get('device_id')
+        #        break
 
-        if not device_id:
-            app.logger.warning(f"Could not find device_id for entity {entity_id} in entity registry.")
-            return None
+        #if not device_id:
+        #    app.logger.warning(f"Could not find device_id for entity {entity_id} in entity registry.")
+        #    return None
 
         # Step 2: Query the device registry using the found device_id to get the MAC address
         # *** Using WebSocket API instead of REST API as requested ***
@@ -160,7 +160,7 @@ def index():
         
         states = response.json()
         app.logger.info(f"Successfully fetched {len(states)} states from Home Assistant.")
-        app.logger.info(f"STATES JSON: {json.dumps(states, indent=4)}")
+        #app.logger.info(f"STATES JSON: {json.dumps(states, indent=4)}")
 
         # Filter the states to find only Broadlink remote devices
         broadlink_devices = [
