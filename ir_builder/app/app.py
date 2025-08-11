@@ -4,6 +4,9 @@ import requests
 import json
 import os
 import logging
+import eventlet
+import eventlet.websocket
+from eventlet import wsgi
 
 # Configure basic logging for the application
 logging.basicConfig(level=logging.INFO)
@@ -31,6 +34,62 @@ HEADERS = {
     'Content-Type': 'application/json',
 }
 
+def _get_device_registry_via_websocket():
+    """
+    Connects to the Home Assistant WebSocket API, retrieves the device registry,
+    logs the raw response, and returns the registry data.
+    """
+    app.logger.info("Attempting to get device registry via WebSocket...")
+    ha_ws_url = 'ws://supervisor/core/api/websocket'
+
+    try:
+        ws = eventlet.websocket.websocket(ha_ws_url)
+
+        # 1. Authenticate with Home Assistant
+        auth_payload = {
+            "type": "auth",
+            "access_token": HA_TOKEN
+        }
+        ws.send(json.dumps(auth_payload))
+        auth_response = json.loads(ws.recv())
+
+        if auth_response.get('type') != 'auth_ok':
+            app.logger.error("WebSocket authentication failed.")
+            ws.close()
+            return None
+        
+        app.logger.info("Successfully authenticated with Home Assistant WebSocket.")
+
+        # 2. Send the command to get the device registry
+        # We use a unique ID for the request
+        request_id = 1
+        request_payload = {
+            "id": request_id,
+            "type": "config/device_registry/get"
+        }
+        ws.send(json.dumps(request_payload))
+
+        # 3. Listen for the response
+        while True:
+            response = json.loads(ws.recv())
+            app.logger.info(f"Received HA WebSocket message: {json.dumps(response, indent=2)}")
+
+            if response.get('id') == request_id and response.get('type') == 'result':
+                if response.get('success'):
+                    # Log the full response data
+                    app.logger.info(f"Successfully received device registry via WebSocket.")
+                    return response.get('result')
+                else:
+                    app.logger.error("Failed to get device registry via WebSocket.")
+                    return None
+            
+    except Exception as e:
+        app.logger.error(f"WebSocket error: {e}")
+        return None
+    finally:
+        if 'ws' in locals() and ws.connected:
+            ws.close()
+
 def _get_mac_address_from_entity_id(entity_id):
     """
     Finds the MAC address for a given entity_id by querying the Home Assistant 
@@ -56,9 +115,11 @@ def _get_mac_address_from_entity_id(entity_id):
             return None
 
         # Step 2: Query the device registry using the found device_id to get the MAC address
-        device_response = requests.get(f'{HA_URL}config/device_registry', headers=HEADERS, timeout=10)
-        device_response.raise_for_status()
-        device_registry = device_response.json()
+        # *** Using WebSocket API instead of REST API as requested ***
+        device_registry = _get_device_registry_via_websocket()
+        if not device_registry:
+            app.logger.error("Failed to retrieve device registry via WebSocket.")
+            return None
 
         app.logger.info(f"device_registry response: {json.dumps(device_registry, indent=4)}")
 
@@ -266,5 +327,7 @@ def generate_yaml():
     return jsonify({'status': 'success', 'yaml': yaml_template})
 
 if __name__ == '__main__':
-    # Ensure the Flask app runs on the correct host and port for Ingress
-    app.run(host='0.0.0.0', port=8389, debug=True)
+    # Patch standard library for non-blocking I/O
+    eventlet.monkey_patch()
+    # Use eventlet's WSGI server to run the Flask app
+    wsgi.server(eventlet.listen(('0.0.0.0', 8389)), app)
