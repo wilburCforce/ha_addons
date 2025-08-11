@@ -6,7 +6,7 @@ import requests
 import json
 import os
 import logging
-import eventlet.websocket
+import websocket
 from eventlet import wsgi
 
 # Configure basic logging for the application
@@ -44,7 +44,8 @@ def _get_device_registry_via_websocket():
     ha_ws_url = 'ws://supervisor/core/api/websocket'
 
     try:
-        ws = eventlet.websocket.websocket(ha_ws_url)
+        # Use websocket.create_connection() from the new library
+        ws = websocket.create_connection(ha_ws_url)
 
         # 1. Authenticate with Home Assistant
         auth_payload = {
@@ -62,7 +63,6 @@ def _get_device_registry_via_websocket():
         app.logger.info("Successfully authenticated with Home Assistant WebSocket.")
 
         # 2. Send the command to get the device registry
-        # We use a unique ID for the request
         request_id = 1
         request_payload = {
             "id": request_id,
@@ -73,22 +73,22 @@ def _get_device_registry_via_websocket():
         # 3. Listen for the response
         while True:
             response = json.loads(ws.recv())
+            # Log the full response for debugging purposes
             app.logger.info(f"Received HA WebSocket message: {json.dumps(response, indent=2)}")
 
             if response.get('id') == request_id and response.get('type') == 'result':
                 if response.get('success'):
-                    # Log the full response data
-                    app.logger.info(f"Successfully received device registry via WebSocket.")
+                    app.logger.info("Successfully received device registry via WebSocket.")
                     return response.get('result')
                 else:
-                    app.logger.error("Failed to get device registry via WebSocket.")
+                    app.logger.error(f"Failed to get device registry via WebSocket. Error: {response.get('error', {}).get('message')}")
                     return None
             
     except Exception as e:
         app.logger.error(f"WebSocket error: {e}")
         return None
     finally:
-        if 'ws' in locals() and ws.connected:
+        if 'ws' in locals() and ws:
             ws.close()
 
 def _get_mac_address_from_entity_id(entity_id):

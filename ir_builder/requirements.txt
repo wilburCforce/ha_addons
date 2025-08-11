@@ -3,3 +3,4 @@ requests
 eventlet
 python-engineio
 python-socketio
+websocket-client
