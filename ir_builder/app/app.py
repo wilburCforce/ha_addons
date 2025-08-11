@@ -1,10 +1,11 @@
-# app.py
+import eventlet
+eventlet.monkey_patch()
+
 from flask import Flask, render_template, request, jsonify
 import requests
 import json
 import os
 import logging
-import eventlet
 import eventlet.websocket
 from eventlet import wsgi
 
@@ -328,6 +329,6 @@ def generate_yaml():
 
 if __name__ == '__main__':
     # Patch standard library for non-blocking I/O
-    eventlet.monkey_patch()
+    #eventlet.monkey_patch()
     # Use eventlet's WSGI server to run the Flask app
     wsgi.server(eventlet.listen(('0.0.0.0', 8389)), app)
