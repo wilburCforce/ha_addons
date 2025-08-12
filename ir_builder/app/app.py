@@ -58,7 +58,7 @@ def _get_entity_registry_via_websocket():
         app.logger.info("Successfully authenticated with Home Assistant WebSocket.")
 
         request_id = 1
-        request_payload = {"id": request_id, "type": "config/entity_registry/list_for_display"}
+        request_payload = {"id": request_id, "type": "config/entity_registry/list"}
         ws.send(json.dumps(request_payload))
 
         while True:
@@ -73,6 +73,50 @@ def _get_entity_registry_via_websocket():
             
     except Exception as e:
         app.logger.error(f"WebSocket error for entity registry: {e}")
+        return None
+    finally:
+        if 'ws' in locals() and ws:
+            ws.close()
+
+def _get_entity_details_via_websocket(entity_id):
+    """
+    Connects to the HA WebSocket API and retrieves detailed information for a single entity.
+    """
+    app.logger.info(f"Attempting to get details for entity {entity_id} via WebSocket...")
+    ha_ws_url = 'ws://supervisor/core/api/websocket'
+    
+    try:
+        ws = websocket.create_connection(ha_ws_url)
+        auth_required_response = json.loads(ws.recv())
+        if auth_required_response.get('type') != 'auth_required':
+            return None
+
+        auth_payload = {"type": "auth", "access_token": HA_TOKEN}
+        ws.send(json.dumps(auth_payload))
+
+        auth_ok_response = json.loads(ws.recv())
+        if auth_ok_response.get('type') != 'auth_ok':
+            return None
+        
+        request_id = 1
+        request_payload = {
+            "id": request_id,
+            "type": "config/entity_registry/get",
+            "entity_id": entity_id
+        }
+        ws.send(json.dumps(request_payload))
+
+        while True:
+            response = json.loads(ws.recv())
+            if response.get('id') == request_id and response.get('type') == 'result':
+                if response.get('success'):
+                    return response.get('result')
+                else:
+                    app.logger.error(f"Failed to get entity details for {entity_id}. Error: {response.get('error', {}).get('message')}")
+                    return None
+            
+    except Exception as e:
+        app.logger.error(f"WebSocket error for entity details: {e}")
         return None
     finally:
         if 'ws' in locals() and ws:
@@ -105,7 +149,8 @@ def index():
     for entity in entity_registry:
         if entity['entity_id'].startswith('remote.'):
             app.logger.info(f"Entity: {entity['entity_id']} features: {entity.get('supported_features', 'N/A')}")
-            app.logger.info(f"Entity Detail: {json.dumps(entity, indent=2)}")
+            entity_details = _get_entity_details_via_websocket(entity['entity_id'])
+            app.logger.info(f"Entity Detail: {json.dumps(entity_details, indent=2)}")
         if entity['entity_id'].startswith('remote.') and entity.get('supported_features') == 3:
             
             mac_address = entity.get('unique_id')
