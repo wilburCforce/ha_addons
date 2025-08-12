@@ -58,7 +58,7 @@ def _get_entity_registry_via_websocket():
         app.logger.info("Successfully authenticated with Home Assistant WebSocket.")
 
         request_id = 1
-        request_payload = {"id": request_id, "type": "config/entity_registry/list"}
+        request_payload = {"id": request_id, "type": "config/entity_registry/list_for_display"}
         ws.send(json.dumps(request_payload))
 
         while True:
