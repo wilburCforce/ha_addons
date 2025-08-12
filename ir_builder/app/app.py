@@ -103,7 +103,7 @@ def index():
     enhanced_devices = []
     # Iterate through the entity registry and filter for remote devices with supported_features: 3
     for entity in entity_registry:
-        app.logger.info(f"Entity: {entity['entity_id'] features: {entity.get('supported_features', 'N/A')}")
+        app.logger.info(f"Entity: {entity['entity_id']} features: {entity.get('supported_features', 'N/A')}")
         if entity['entity_id'].startswith('remote.') and entity.get('supported_features') == 3:
             
             mac_address = entity.get('unique_id')
