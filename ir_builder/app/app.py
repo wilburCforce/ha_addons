@@ -188,6 +188,7 @@ def index():
                 })
 
     app.logger.info(f"Found {len(enhanced_devices)} Broadlink remote devices.")
+    app.logger.info(f"Found {json.dumps(enhanced_devices)}")
     
     return render_template('index.html', devices=enhanced_devices)
 
