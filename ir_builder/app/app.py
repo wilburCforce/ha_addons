@@ -186,6 +186,7 @@ def index():
                     'name': entity.get('name', entity['entity_id']),
                     'mac': mac_address
                 })
+                app.logger.info(f"Found {json.dumps(entity)}")
 
     app.logger.info(f"Found {len(enhanced_devices)} Broadlink remote devices.")
     app.logger.info(f"Found {json.dumps(enhanced_devices)}")
