@@ -32,6 +32,26 @@ HEADERS = {
     'Content-Type': 'application/json',
 }
 
+def _get_all_states_via_rest():
+    """
+    Retrieves the states for all entities via the Home Assistant REST API.
+    Returns a dictionary mapping entity IDs to their state objects.
+    """
+    app.logger.info("Attempting to get all entity states via REST API...")
+    url = 'http://supervisor/core/api/states'
+    
+    try:
+        response = requests.get(url, headers=HEADERS, timeout=10)
+        response.raise_for_status()
+        
+        states = response.json()
+        
+        # Convert the list of state objects into a dictionary for easy lookup
+        return {state['entity_id']: state for state in states}
+    except requests.exceptions.RequestException as e:
+        app.logger.error(f"REST API error fetching states: {e}")
+        return {}
+
 def _get_entity_registry_via_websocket():
     """
     Connects to the HA WebSocket API and retrieves the entity registry.
@@ -131,42 +151,46 @@ def _get_broadlink_file_path(mac_address):
 @app.route('/')
 def index():
     """
-    Renders the main page and fetches Broadlink remote devices from the
-    Home Assistant entity registry via WebSocket, filtering by supported features.
+    Renders the main page by combining data from the WebSocket and REST API
+    to find Broadlink remote devices with the correct supported features.
     """
     app.logger.info("Received request for the home page ('/').")
     
     if not HA_TOKEN:
         return "Error: Home Assistant token is not available.", 500
 
-    entity_registry = _get_entity_registry_via_websocket()
-
-    if not entity_registry:
+    # Step 1: Get the full entity registry list via WebSocket
+    entity_list = _get_registry_via_websocket('config/entity_registry/list')
+    if not entity_list:
         return "Error: Could not retrieve entity registry from Home Assistant.", 500
-    
-    enhanced_devices = []
-    # Iterate through the entity registry and filter for remote devices with supported_features: 3
-    for entity in entity_registry:
-        if entity['entity_id'].startswith('remote.'):
-            app.logger.info(f"Entity: {entity['entity_id']} features: {entity.get('supported_features', 'N/A')}")
-            entity_details = _get_entity_details_via_websocket(entity['entity_id'])
-            app.logger.info(f"Entity Detail: {json.dumps(entity_details, indent=2)}")
-        if entity['entity_id'].startswith('remote.') and entity.get('supported_features') == 3:
-            
-            mac_address = entity.get('unique_id')
-            
-            enhanced_devices.append({
-                'entity_id': entity['entity_id'],
-                'name': entity.get('name', entity['entity_id']),
-                'mac': mac_address
-            })
 
-    app.logger.info(f"Found {len(enhanced_devices)} Broadlink remote devices with MAC addresses.")
-    app.logger.info(f"Devices: {json.dumps(enhanced_devices, indent=2)}")
+    # Step 2: Get all entity states via REST API
+    all_states = _get_all_states_via_rest()
+    if not all_states:
+        return "Error: Could not retrieve entity states from Home Assistant.", 500
+
+    enhanced_devices = []
+    # Step 3: Iterate through the WebSocket results and cross-reference with the REST API states
+    for entity in entity_list:
+        # Check if the entity is a remote and if its state information exists
+        if entity['entity_id'].startswith('remote.') and entity['entity_id'] in all_states:
+            state = all_states[entity['entity_id']]
+            # Check the supported_features from the state data
+            supported_features = state.get('attributes', {}).get('supported_features')
+            
+            if supported_features == 3:
+                # If supported_features is 3, it's a Broadlink remote
+                mac_address = entity.get('unique_id')
+                
+                enhanced_devices.append({
+                    'entity_id': entity['entity_id'],
+                    'name': entity.get('name', entity['entity_id']),
+                    'mac': mac_address
+                })
+
+    app.logger.info(f"Found {len(enhanced_devices)} Broadlink remote devices.")
     
     return render_template('index.html', devices=enhanced_devices)
-
-# Removed the old _get_mac_address_from_entity_id function
 
 @app.route('/get_codes', methods=['POST'])
 def get_codes():
