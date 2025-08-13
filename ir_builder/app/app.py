@@ -98,7 +98,6 @@ def _get_entity_registry_via_websocket():
         if 'ws' in locals() and ws:
             ws.close()
 
-def _get_entity_details_via_websocket(entity_id):
     """
     Connects to the HA WebSocket API and retrieves detailed information for a single entity.
     """
@@ -160,7 +159,7 @@ def index():
         return "Error: Home Assistant token is not available.", 500
 
     # Step 1: Get the full entity registry list via WebSocket
-    entity_list = _get_registry_via_websocket('config/entity_registry/list')
+    entity_list = _get_entity_registry_via_websocket('config/entity_registry/list')
     if not entity_list:
         return "Error: Could not retrieve entity registry from Home Assistant.", 500
 
