@@ -17,7 +17,7 @@ app = Flask(__name__)
 app.logger.info("Starting IR Builder Flask application...")
 
 def _check_files():
-    path_to_storage = '/config/.storage' 
+    path_to_storage = '/' 
     path_to_storage2 = '/homeassistant/.storage' 
     try:
         # Use os.listdir to check if the directory exists and see its contents
