@@ -297,18 +297,19 @@
                         commandsList.innerHTML = `<p>No learned commands found for this device.</p>`;
                     } else {
                         let html = '';
+                        // Loop through each device (e.g., 'hdmi', 'tv')
                         for (const deviceName in devices) {
-                            if (devices[deviceName].commands) {
-                                for (const commandName in devices[deviceName].commands) {
-                                    html += `
-                                        <div class="command-item">
-                                            <div class="command-name-container">
-                                                <strong>${deviceName}</strong>: ${commandName}
-                                            </div>
-                                            <button onclick="deleteCommand('${entityId}', '${deviceName}', '${commandName}')" class="btn btn-danger">Delete</button>
+                            const commands = devices[deviceName];
+                            // Now loop through each command within that device (e.g., 'power_on', 'volume_up')
+                            for (const commandName in commands) {
+                                html += `
+                                    <div class="command-item">
+                                        <div class="command-name-container">
+                                            <strong>${deviceName}</strong>: ${commandName}
                                         </div>
-                                    `;
-                                }
+                                        <button onclick="deleteCommand('${entityId}', '${deviceName}', '${commandName}')" class="btn btn-danger">Delete</button>
+                                    </div>
+                                `;
                             }
                         }
                         commandsList.innerHTML = html;
