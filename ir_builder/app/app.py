@@ -18,7 +18,7 @@ app.logger.info("Starting IR Builder Flask application...")
 
 # Load the Home Assistant token from environment variables
 HA_TOKEN = os.environ.get('SUPERVISOR_TOKEN')
-BROADLINK_STORAGE_PATH = '/config/.storage/broadlink_remote_{mac}_codes'
+BROADLINK_STORAGE_PATH = '/homeassistant/.storage/broadlink_remote_{mac}_codes'
 
 # Log the token status for debugging
 if HA_TOKEN:
