@@ -17,6 +17,53 @@
             darkMode: 'media' // This is the default, but explicitly setting it is good practice
         }
     </script>
+    <style>
+        /* Command List */
+        .command-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        
+        .command-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            background-color: #f3f4f6;
+            border-radius: 0.375rem;
+            border: 1px solid var(--border-color);
+            font-size: 0.875rem;
+            color: #4b5563;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .command-item {
+                background-color: #4b5563;
+                color: #f8fafc;
+            }
+        }
+        
+        .command-name-container {
+            flex-grow: 1;
+        }
+        
+        .loading-spinner {
+            display: none;
+            margin-top: 1rem;
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-top: 4px solid var(--primary-btn-bg);
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
 </head>
 <body class="bg-slate-50 text-gray-900 dark:bg-gray-900 dark:text-gray-50">
     <div class="max-w-3xl mx-auto flex flex-col gap-6 p-4">
@@ -75,6 +122,7 @@
     </div>
 
     <script>
+    document.addEventListener('DOMContentLoaded', () => {
         const deviceSelect = document.getElementById('device-select');
         const commandsList = document.getElementById('commands-list');
         const yamlOutput = document.getElementById('yaml-output');
@@ -92,22 +140,38 @@
         // Event listener for device selection change
         deviceSelect.addEventListener('change', loadCommands);
 
+        // A helper function to create a delay using a Promise
+        const delay = ms => new Promise(res => setTimeout(res, ms));
+
         function showMessage(type, text) {
             messageBox.innerText = text;
-            messageBox.className = `message-box ${type}`;
-            messageBox.style.display = 'block';
+            messageBox.classList.remove('hidden');
+            
+            // Clear existing status classes
+            messageBox.classList.remove('bg-green-100', 'text-green-800', 'dark:bg-green-900', 'dark:text-green-200', 'border-green-400', 'dark:border-green-700');
+            messageBox.classList.remove('bg-red-100', 'text-red-800', 'dark:bg-red-900', 'dark:text-red-200', 'border-red-400', 'dark:border-red-700');
+            messageBox.classList.remove('bg-blue-100', 'text-blue-800', 'dark:bg-blue-900', 'dark:text-blue-200', 'border-blue-400', 'dark:border-blue-700');
+
+            if (type === 'success') {
+                messageBox.classList.add('bg-green-100', 'text-green-800', 'dark:bg-green-900', 'dark:text-green-200', 'border-green-400', 'dark:border-green-700');
+            } else if (type === 'error') {
+                messageBox.classList.add('bg-red-100', 'text-red-800', 'dark:bg-red-900', 'dark:text-red-200', 'border-red-400', 'dark:border-red-700');
+            } else if (type === 'info') {
+                 messageBox.classList.add('bg-blue-100', 'text-blue-800', 'dark:bg-blue-900', 'dark:text-blue-200', 'border-blue-400', 'dark:border-blue-700');
+            }
+            messageBox.classList.add('border');
+
             setTimeout(() => {
-                messageBox.style.display = 'none';
+                messageBox.classList.add('hidden');
             }, 5000);
         }
 
-        // The loadCommands function is the same, no changes needed here.
         async function loadCommands() {
             const deviceSelect = document.getElementById('device-select');
             const selectedOption = deviceSelect.options[deviceSelect.selectedIndex];
 
             if (!selectedOption || !selectedOption.value) {
-                commandsList.innerHTML = `<p>Please select a device above to see its learned commands.</p>`;
+                commandsList.innerHTML = `<p class="text-gray-600 dark:text-gray-400">Please select a device above to see its learned commands.</p>`;
                 return;
             }
 
@@ -115,7 +179,7 @@
             const macAddress = selectedOption.dataset.mac;
 
             commandsList.innerHTML = '';
-            loadingSpinner.style.display = 'block';
+            loadingSpinner.classList.remove('hidden');
 
             try {
                 const response = await fetch(`${baseUrl}get_codes`, {
@@ -128,18 +192,18 @@
                 if (data.status === 'success') {
                     const devices = data.devices;
                     if (Object.keys(devices).length === 0) {
-                        commandsList.innerHTML = `<p>No learned commands found for this device.</p>`;
+                        commandsList.innerHTML = `<p class="text-gray-600 dark:text-gray-400">No learned commands found for this device.</p>`;
                     } else {
                         let html = '';
                         for (const deviceName in devices) {
                             const commands = devices[deviceName];
                             for (const commandName in commands) {
                                 html += `
-                                    <div class="command-item">
-                                        <div class="command-name-container">
+                                    <div class="flex justify-between items-center p-3 bg-gray-100 dark:bg-gray-700 rounded-md border border-gray-200 dark:border-gray-600 text-sm text-gray-900 dark:text-gray-100">
+                                        <div class="flex-grow">
                                             <strong>${deviceName}</strong>: ${commandName}
                                         </div>
-                                        <button onclick="deleteCommand('${entityId}', '${deviceName}', '${commandName}')" class="btn btn-danger">Delete</button>
+                                        <button onclick="deleteCommand('${entityId}', '${deviceName}', '${commandName}')" class="px-3 py-1 text-sm font-semibold rounded-md transition-all duration-150 transform active:scale-98 bg-red-600 text-white border border-transparent hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600">Delete</button>
                                     </div>
                                 `;
                             }
@@ -147,23 +211,21 @@
                         commandsList.innerHTML = html;
                     }
                 } else {
-                    commandsList.innerHTML = `<p class="error">${data.message}</p>`;
+                    commandsList.innerHTML = `<p class="text-red-600 dark:text-red-400">${data.message}</p>`;
                     showMessage('error', `Failed to load commands: ${data.message}`);
                 }
             } catch (error) {
-                commandsList.innerHTML = `<p class="error">An error occurred while loading commands: ${error}</p>`;
+                commandsList.innerHTML = `<p class="text-red-600 dark:text-red-400">An error occurred while loading commands: ${error}</p>`;
                 showMessage('error', `An error occurred: ${error}`);
             } finally {
-                loadingSpinner.style.display = 'none';
+                loadingSpinner.classList.add('hidden');
             }
         }
         
-        // This function shows the new modal and handles the user's choice
         function showDeleteModal() {
             return new Promise((resolve) => {
                 deleteModal.classList.remove('hidden');
 
-                // Listener for the confirm button
                 const onConfirm = () => {
                     deleteModal.classList.add('hidden');
                     modalConfirmBtn.removeEventListener('click', onConfirm);
@@ -171,7 +233,6 @@
                     resolve(true);
                 };
 
-                // Listener for the cancel button
                 const onCancel = () => {
                     deleteModal.classList.add('hidden');
                     modalConfirmBtn.removeEventListener('click', onConfirm);
@@ -184,7 +245,6 @@
             });
         }
 
-        // Updated deleteCommand function to use the new modal
         async function deleteCommand(entityId, deviceName, commandName) {
             const confirmed = await showDeleteModal();
             if (!confirmed) {
@@ -205,7 +265,9 @@
 
                 if (data.status === 'success') {
                     showMessage('success', data.message);
-                    loadCommands(); // Refresh the list
+                    // Wait for 5 seconds before reloading the commands
+                    await delay(5000); 
+                    loadCommands();
                 } else {
                     showMessage('error', data.message);
                 }
@@ -240,6 +302,9 @@
                 const data = await response.json();
                 if (data.status === 'success') {
                     showMessage('success', data.message);
+                    // Wait for 5 seconds after learning is complete
+                    await delay(5000); 
+                    loadCommands(); // Reload the list to show the new command
                 } else {
                     showMessage('error', data.message);
                 }
@@ -285,15 +350,11 @@
             showMessage('success', 'YAML copied to clipboard!');
         }
 
-        // Removed the problematic `confirm` function
-
-        // Initial load of commands when the page loads, if a device is pre-selected
-        document.addEventListener('DOMContentLoaded', () => {
-            if (deviceSelect.value) {
-                loadCommands();
-            }
-        });
-    </script>
+        if (deviceSelect.value) {
+            loadCommands();
+        }
+    });
+</script>
     
 </body>
 </html>
