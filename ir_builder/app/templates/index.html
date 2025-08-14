@@ -269,11 +269,16 @@
         }
 
         async function loadCommands() {
-            const entityId = deviceSelect.value;
-            if (!entityId) {
+            const deviceSelect = document.getElementById('device-select');
+            const selectedOption = deviceSelect.options[deviceSelect.selectedIndex];
+
+            if (!selectedOption || !selectedOption.value) {
                 commandsList.innerHTML = `<p>Please select a device above to see its learned commands.</p>`;
                 return;
             }
+
+            const entityId = selectedOption.value;
+            const macAddress = selectedOption.dataset.mac; // Get the mac address from the data attribute
 
             commandsList.innerHTML = '';
             loadingSpinner.style.display = 'block';
@@ -282,7 +287,7 @@
                 const response = await fetch(`${baseUrl}get_codes`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ entity_id: entityId })
+                    body: JSON.stringify({ entity_id: entityId, mac: macAddress }) // Pass both entity_id and mac
                 });
                 const data = await response.json();
                 
