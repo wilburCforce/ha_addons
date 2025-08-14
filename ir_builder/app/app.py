@@ -42,7 +42,7 @@ def _check_files():
         app.logger.error(f"An error occurred: {e}")
         return {"status": "error", "message": str(e)}
 
-_check_files()
+#_check_files()
 
 # Load the Home Assistant token from environment variables
 HA_TOKEN = os.environ.get('SUPERVISOR_TOKEN')
@@ -243,6 +243,7 @@ def get_codes():
         with open(file_path, 'r') as f:
             data = json.load(f)
         app.logger.info(f"Successfully read and parsed codes for {entity_id}.")
+        app.logger.info(f"Data: {json.dumps(data)}.")
         return jsonify({'status': 'success', 'devices': data.get('data', {}).get('devices', {})})
     except (IOError, json.JSONDecodeError) as e:
         app.logger.error(f"Error reading or parsing storage file at {file_path}: {e}")
