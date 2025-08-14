@@ -16,30 +16,33 @@ app = Flask(__name__)
 # Log the application start
 app.logger.info("Starting IR Builder Flask application...")
 
-path_to_storage = '/config/.storage' 
-path_to_storage2 = '/homeassistant/.storage' 
-try:
-    # Use os.listdir to check if the directory exists and see its contents
-    app.logger.info(f"Checking directory: {path_to_storage}")
-    files_in_dir = os.listdir(path_to_storage)
-    app.logger.info(f"Files found in .storage: {files_in_dir}")
+def _check_files():
+    path_to_storage = '/config/.storage' 
+    path_to_storage2 = '/homeassistant/.storage' 
+    try:
+        # Use os.listdir to check if the directory exists and see its contents
+        app.logger.info(f"Checking directory: {path_to_storage}")
+        files_in_dir = os.listdir(path_to_storage)
+        app.logger.info(f"Files found in .storage: {files_in_dir}")
 
-    app.logger.info(f"Checking directory: {path_to_storage2}")
-    files_in_dir2 = os.listdir(path_to_storage2)
-    app.logger.info(f"Files found in .storage: {files_in_dir2}")
+        app.logger.info(f"Checking directory: {path_to_storage2}")
+        files_in_dir2 = os.listdir(path_to_storage2)
+        app.logger.info(f"Files found in .storage: {files_in_dir2}")
 
-    # Now try to open the file with the corrected path
-    #file_path = f'{path_to_storage}/broadlink_remote_{mac_address}'
-    #app.logger.info(f"Attempting to open file: {file_path}")
-    
-    # Rest of your file-reading code here...
+        # Now try to open the file with the corrected path
+        #file_path = f'{path_to_storage}/broadlink_remote_{mac_address}'
+        #app.logger.info(f"Attempting to open file: {file_path}")
+        
+        # Rest of your file-reading code here...
 
-except FileNotFoundError:
-    app.logger.error(f"Directory not found: {path_to_storage}")
-    return {"status": "error", "message": "Storage directory not found."}
-except Exception as e:
-    app.logger.error(f"An error occurred: {e}")
-    return {"status": "error", "message": str(e)}
+    except FileNotFoundError:
+        app.logger.error(f"Directory not found: {path_to_storage}")
+        return {"status": "error", "message": "Storage directory not found."}
+    except Exception as e:
+        app.logger.error(f"An error occurred: {e}")
+        return {"status": "error", "message": str(e)}
+
+_check_files()
 
 # Load the Home Assistant token from environment variables
 HA_TOKEN = os.environ.get('SUPERVISOR_TOKEN')
