@@ -1,5 +1,5 @@
 name: "IR Builder"
-version: "0.1.65"
+version: "0.1.66"
 slug: "ir_builder"
 description: "An add-on to help build an automation for an IR blaster remote"
 homeassistant_api: true
@@ -20,5 +20,5 @@ ingress: true
 ingress_port: 8389
 panel_icon: mdi:robot-happy
 init: false
-docker:
-  homeassistant_config: true
+map:
+  - type: homeassistant_config
