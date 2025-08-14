@@ -88,9 +88,9 @@
         }
         
         .btn-danger {
-            background-color: var(#b91c1c);
+            background-color: #b91c1c;
             color: #ffffff;
-            border-color: var(#b91c1c);
+            border-color: #b91c1c;
         }
 
         .btn-danger:hover {
@@ -210,13 +210,12 @@
             }, 5000);
         }
 
-        // The loadCommands function is the same, no changes needed here.
         async function loadCommands() {
             const deviceSelect = document.getElementById('device-select');
             const selectedOption = deviceSelect.options[deviceSelect.selectedIndex];
 
             if (!selectedOption || !selectedOption.value) {
-                commandsList.innerHTML = `<p>Please select a device above to see its learned commands.</p>`;
+                commandsList.innerHTML = `<p class="text-gray-600 dark:text-gray-400">Please select a device above to see its learned commands.</p>`;
                 return;
             }
 
@@ -224,7 +223,7 @@
             const macAddress = selectedOption.dataset.mac;
 
             commandsList.innerHTML = '';
-            loadingSpinner.style.display = 'block';
+            loadingSpinner.classList.remove('hidden');
 
             try {
                 const response = await fetch(`${baseUrl}get_codes`, {
@@ -233,37 +232,51 @@
                     body: JSON.stringify({ entity_id: entityId, mac: macAddress })
                 });
                 const data = await response.json();
-                
+
                 if (data.status === 'success') {
                     const devices = data.devices;
                     if (Object.keys(devices).length === 0) {
-                        commandsList.innerHTML = `<p>No learned commands found for this device.</p>`;
+                        commandsList.innerHTML = `<p class="text-gray-600 dark:text-gray-400">No learned commands found for this device.</p>`;
                     } else {
                         let html = '';
                         for (const deviceName in devices) {
                             const commands = devices[deviceName];
+                            
+                            // Create a collapsible device group
+                            html += `
+                                <div class="bg-gray-100 dark:bg-gray-700 rounded-md p-4 transition-all duration-200">
+                                    <h3 class="font-bold text-lg mb-2">${deviceName}</h3>
+                                    <div class="pl-4 flex flex-col gap-2">
+                            `;
+                            
                             for (const commandName in commands) {
                                 html += `
-                                    <div class="command-item">
-                                        <div class="command-name-container">
-                                            <strong>${deviceName}</strong>: ${commandName}
+                                    <div class="flex justify-between items-center bg-white dark:bg-gray-800 rounded-md p-3 border border-gray-200 dark:border-gray-600 text-sm">
+                                        <div class="flex-grow text-gray-800 dark:text-gray-200">
+                                            ${commandName}
                                         </div>
-                                        <button onclick="deleteCommand('${entityId}', '${deviceName}', '${commandName}')" class="btn btn-danger">Delete</button>
+                                        <button onclick="deleteCommand('${entityId}', '${deviceName}', '${commandName}')" class="px-3 py-1 text-sm font-semibold rounded-md transition-all duration-150 transform active:scale-98 bg-red-600 text-white border border-transparent hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600">Delete</button>
                                     </div>
                                 `;
                             }
+                            
+                            // Close the device group
+                            html += `
+                                    </div>
+                                </div>
+                            `;
                         }
                         commandsList.innerHTML = html;
                     }
                 } else {
-                    commandsList.innerHTML = `<p class="error">${data.message}</p>`;
+                    commandsList.innerHTML = `<p class="text-red-600 dark:text-red-400">${data.message}</p>`;
                     showMessage('error', `Failed to load commands: ${data.message}`);
                 }
             } catch (error) {
-                commandsList.innerHTML = `<p class="error">An error occurred while loading commands: ${error}</p>`;
+                commandsList.innerHTML = `<p class="text-red-600 dark:text-red-400">An error occurred while loading commands: ${error}</p>`;
                 showMessage('error', `An error occurred: ${error}`);
             } finally {
-                loadingSpinner.style.display = 'none';
+                loadingSpinner.classList.add('hidden');
             }
         }
         
