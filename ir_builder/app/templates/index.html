@@ -4,215 +4,31 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Broadlink Automation Helper</title>
-    <style>
-        /* Base Tailwind-like styling for a clean look */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-        
-        :root {
-            --bg-color: #f8fafc;
-            --text-color: #1f2937;
-            --card-bg: #ffffff;
-            --border-color: #e2e8f0;
-            --primary-btn-bg: #4f46e5;
-            --primary-btn-hover-bg: #4338ca;
-            --success-color: #16a34a;
-            --error-color: #dc2626;
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            },
+            darkMode: 'media' // This is the default, but explicitly setting it is good practice
         }
-
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --bg-color: #1f2937;
-                --text-color: #f8fafc;
-                --card-bg: #374151;
-                --border-color: #4b5563;
-                --primary-btn-bg: #6366f1;
-                --primary-btn-hover-bg: #4f46e5;
-                --success-color: #4ade80;
-                --error-color: #f87171;
-            }
-        }
-        
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            transition: background-color 0.3s, color 0.3s;
-            margin: 0;
-            padding: 2rem;
-            line-height: 1.5;
-        }
-
-        .container {
-            max-width: 48rem;
-            margin: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
-
-        .card {
-            background-color: var(--card-bg);
-            padding: 2rem;
-            border-radius: 0.75rem;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            border: 1px solid var(--border-color);
-        }
-
-        h1 {
-            font-size: 2.25rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
-            text-align: center;
-        }
-        
-        h2 {
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-        }
-
-        p {
-            margin-bottom: 1rem;
-            color: #6b7280;
-        }
-
-        /* Form Controls */
-        .form-control {
-            display: block;
-            width: 100%;
-            padding: 0.75rem 1rem;
-            border: 1px solid var(--border-color);
-            border-radius: 0.375rem;
-            outline: none;
-            margin-bottom: 1rem;
-            background-color: var(--card-bg);
-            color: var(--text-color);
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
-        
-        .form-control:focus {
-            border-color: var(--primary-btn-bg);
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
-        }
-
-        .btn {
-            padding: 0.75rem 1.5rem;
-            font-weight: 600;
-            border: 1px solid var(--border-color);
-            border-radius: 0.375rem;
-            cursor: pointer;
-            transition: background-color 0.15s ease-in-out, transform 0.1s ease-in-out;
-        }
-        
-        .btn:active {
-            transform: scale(0.98);
-        }
-        
-        .btn-primary {
-            background-color: var(--primary-btn-bg);
-            color: #ffffff;
-            border-color: var(--primary-btn-bg);
-        }
-
-        .btn-primary:hover {
-            background-color: var(--primary-btn-hover-bg);
-        }
-        
-        .btn-danger {
-            background-color: var(--error-color);
-            color: #ffffff;
-            border-color: var(--error-color);
-        }
-
-        .btn-danger:hover {
-            background-color: #b91c1c;
-        }
-
-        .btn-secondary {
-            background-color: transparent;
-            color: var(--text-color);
-        }
-        
-        /* Status Messages */
-        .message-box {
-            padding: 1rem;
-            border-radius: 0.375rem;
-            margin-bottom: 1rem;
-            font-weight: 600;
-            display: none;
-        }
-
-        .success {
-            background-color: #dcfce7;
-            color: var(--success-color);
-            border: 1px solid var(--success-color);
-        }
-
-        .error {
-            background-color: #fee2e2;
-            color: var(--error-color);
-            border: 1px solid var(--error-color);
-        }
-        
-        /* Command List */
-        .command-list {
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-        }
-        
-        .command-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.75rem 1rem;
-            background-color: #f3f4f6;
-            border-radius: 0.375rem;
-            border: 1px solid var(--border-color);
-            font-size: 0.875rem;
-            color: #4b5563;
-        }
-
-        @media (prefers-color-scheme: dark) {
-            .command-item {
-                background-color: #4b5563;
-                color: #f8fafc;
-            }
-        }
-        
-        .command-name-container {
-            flex-grow: 1;
-        }
-        
-        .loading-spinner {
-            display: none;
-            margin-top: 1rem;
-            border: 4px solid rgba(0, 0, 0, 0.1);
-            border-top: 4px solid var(--primary-btn-bg);
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-    </style>
+    </script>
 </head>
-<body>
-    <div class="container">
-        <h1>Broadlink IR Automation Helper</h1>
+<body class="bg-slate-50 text-gray-900 dark:bg-gray-900 dark:text-gray-50">
+    <div class="max-w-3xl mx-auto flex flex-col gap-6 p-4">
+        <h1 class="text-3xl font-bold text-center mb-4">Broadlink IR Automation Helper</h1>
 
         <!-- Custom Message Box -->
-        <div id="message-box" class="message-box"></div>
+        <div id="message-box" class="p-4 rounded-md mb-4 font-semibold hidden"></div>
 
-        <div class="card">
-            <h2>1. Select Your Broadlink Device</h2>
-            <p>Choose the Broadlink RM4 device to view its existing commands or to learn a new one.</p>
-            <select id="device-select" class="form-control">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+            <h2 class="text-2xl font-semibold mb-2">1. Select Your Broadlink Device</h2>
+            <p class="text-gray-600 dark:text-gray-400 mb-4">Choose the Broadlink RM4 device to view its existing commands or to learn a new one.</p>
+            <select id="device-select" class="block w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors duration-200 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 mb-4">
                 <option value="" disabled selected>-- Select a device --</option>
                 {% for device in devices %}
                 <option value="{{ device.entity_id }}" data-mac="{{ device.mac }}">{{ device.entity_id }} (Name:{{ device.name }})</option>
@@ -220,39 +36,40 @@
             </select>
         </div>
 
-        <div class="card">
-            <h2>2. Existing Learned Commands</h2>
-            <p>A list of commands already learned for the selected device. Click "Delete" to remove one.</p>
-            <div id="commands-list" class="command-list">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+            <h2 class="text-2xl font-semibold mb-2">2. Existing Learned Commands</h2>
+            <p class="text-gray-600 dark:text-gray-400 mb-4">A list of commands already learned for the selected device. Click "Delete" to remove one.</p>
+            <div id="commands-list" class="flex flex-col gap-3">
                 <p>Please select a device above to see its learned commands.</p>
             </div>
-            <div id="loading-spinner" class="loading-spinner"></div>
+            <div id="loading-spinner" class="mt-4 border-4 border-gray-200 dark:border-gray-700 border-t-indigo-500 rounded-full w-8 h-8 animate-spin hidden"></div>
         </div>
 
-        <div class="card">
-            <h2>3. Learn a New Command</h2>
-            <p>Provide a name for the device and command you are about to learn, then click "Start Learning".</p>
-            <input type="text" id="new-device-name" placeholder="e.g., tv_remote" class="form-control">
-            <input type="text" id="new-command-name" placeholder="e.g., tv_power_on" class="form-control">
-            <button onclick="startLearning()" class="btn btn-primary">Start Learning</button>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+            <h2 class="text-2xl font-semibold mb-2">3. Learn a New Command</h2>
+            <p class="text-gray-600 dark:text-gray-400 mb-4">Provide a name for the device and command you are about to learn, then click "Start Learning".</p>
+            <input type="text" id="new-device-name" placeholder="e.g., tv_remote" class="block w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors duration-200 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 mb-4">
+            <input type="text" id="new-command-name" placeholder="e.g., tv_power_on" class="block w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors duration-200 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 mb-4">
+            <button onclick="startLearning()" class="px-6 py-3 font-semibold rounded-md transition-all duration-150 transform active:scale-98 bg-indigo-600 text-white border border-transparent hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600">Start Learning</button>
         </div>
 
-        <div class="card">
-            <h2>4. Generate Automation YAML</h2>
-            <p>After learning is complete, you can generate the YAML for your automation using the new command name.</p>
-            <button onclick="generateYaml()" class="btn btn-primary">Generate YAML</button>
-            <pre><textarea id="yaml-output" readonly class="form-control"></textarea></pre>
-            <button onclick="copyYaml()" class="btn btn-secondary">Copy YAML</button>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+            <h2 class="text-2xl font-semibold mb-2">4. Generate Automation YAML</h2>
+            <p class="text-gray-600 dark:text-gray-400 mb-4">After learning is complete, you can generate the YAML for your automation using the new command name.</p>
+            <pre><textarea id="yaml-output" readonly class="block w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors duration-200 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 mb-4"></textarea></pre>
+            <button onclick="generateYaml()" class="px-6 py-3 font-semibold rounded-md transition-all duration-150 transform active:scale-98 bg-indigo-600 text-white border border-transparent hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600">Generate YAML</button>
+            <button onclick="copyYaml()" class="px-6 py-3 font-semibold rounded-md transition-all duration-150 transform active:scale-98 bg-transparent text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 ml-2">Copy YAML</button>
         </div>
     </div>
+
     <!-- Custom Modal for Confirming Deletion -->
     <div id="delete-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm dark:bg-gray-800">
             <h3 class="text-xl font-bold mb-4 text-gray-900 dark:text-gray-100">Confirm Deletion</h3>
             <p class="text-gray-700 dark:text-gray-300 mb-6">Are you sure you want to delete this command?</p>
             <div class="flex justify-end gap-2">
-                <button id="modal-cancel-btn" class="btn btn-secondary">Cancel</button>
-                <button id="modal-confirm-btn" class="btn btn-danger">Delete</button>
+                <button id="modal-cancel-btn" class="px-6 py-3 font-semibold rounded-md transition-all duration-150 transform active:scale-98 bg-transparent text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700">Cancel</button>
+                <button id="modal-confirm-btn" class="px-6 py-3 font-semibold rounded-md transition-all duration-150 transform active:scale-98 bg-red-600 text-white border border-transparent hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600">Delete</button>
             </div>
         </div>
     </div>
