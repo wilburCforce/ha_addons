@@ -225,6 +225,7 @@ def index():
 def get_codes():
     """
     Retrieves learned IR commands from the Broadlink device's .storage file.
+    The data structure is a top-level "data" key containing device objects.
     """
     entity_id = request.json.get('entity_id')
     mac_address = request.json.get('mac')
@@ -235,6 +236,7 @@ def get_codes():
 
     file_path = _get_broadlink_file_path(mac_address)
     
+    # Check if the file exists before trying to open it
     if not os.path.exists(file_path):
         app.logger.warning(f"Storage file not found for {entity_id} at {file_path}. Assuming no learned codes.")
         return jsonify({'status': 'success', 'devices': {}}), 200
@@ -242,9 +244,18 @@ def get_codes():
     try:
         with open(file_path, 'r') as f:
             data = json.load(f)
+        
+        # The data you need is directly under the 'data' key.
+        # The structure is: data['data'] -> {'hdmi': {...}, 'fan': {...}}
+        # So we need to get data['data']
+        devices_and_commands = data.get('data', {})
+        
         app.logger.info(f"Successfully read and parsed codes for {entity_id}.")
-        app.logger.info(f"Data: {json.dumps(data)}.")
-        return jsonify({'status': 'success', 'devices': data.get('data', {}).get('devices', {})})
+        app.logger.info(f"Returning data for {len(devices_and_commands)} devices.")
+        
+        # Return the entire 'data' object from the file, which contains all devices.
+        return jsonify({'status': 'success', 'devices': devices_and_commands})
+    
     except (IOError, json.JSONDecodeError) as e:
         app.logger.error(f"Error reading or parsing storage file at {file_path}: {e}")
         return jsonify({'status': 'error', 'message': 'Failed to read learned codes file.'}), 500
