@@ -18,7 +18,7 @@ app.logger.info("Starting IR Builder Flask application...")
 
 # Load the Home Assistant token from environment variables
 HA_TOKEN = os.environ.get('SUPERVISOR_TOKEN')
-BROADLINK_STORAGE_PATH = '/config/.storage/broadlink_remote_{mac}_codes.json'
+BROADLINK_STORAGE_PATH = '/config/.storage/broadlink_remote_{mac}_codes'
 
 # Log the token status for debugging
 if HA_TOKEN:
@@ -178,7 +178,7 @@ def index():
             supported_features = state.get('attributes', {}).get('supported_features')
             
             if supported_features == 3:
-                # If supported_features is 3, it's a Broadlink remote
+                # If supported_features is 3, it's a remote that supports learning
                 mac_address = entity.get('unique_id')
                 
                 enhanced_devices.append({

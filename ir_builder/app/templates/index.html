@@ -215,7 +215,7 @@
             <select id="device-select" class="form-control">
                 <option value="" disabled selected>-- Select a device --</option>
                 {% for device in devices %}
-                <option value="{{ device.entity_id }}" data-mac="{{ device.mac }}">{{ device.name }}</option>
+                <option value="{{ device.entity_id }}" data-mac="{{ device.mac }}">{{ device.entity_id }} (Name:{{ device.name }})</option>
                 {% endfor %}
             </select>
         </div>
