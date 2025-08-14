@@ -134,7 +134,10 @@
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
             <h2 class="text-2xl font-semibold mb-2">3. Learn a New Command</h2>
             <p class="text-gray-600 dark:text-gray-400 mb-4">Provide a name for the device and command you are about to learn, then click "Start Learning".</p>
-            <input type="text" id="new-device-name" placeholder="e.g., tv_remote" class="block w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors duration-200 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 mb-4">
+            <input list="device-names" id="new-device-name" placeholder="Select or type a new device name (e.g., tv_remote)" class="block w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors duration-200 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 mb-4">
+            <datalist id="device-names">
+                <option value="">
+            </datalist>
             <input type="text" id="new-command-name" placeholder="e.g., tv_power_on" class="block w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors duration-200 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 mb-4">
             <button onclick="startLearning()" class="px-6 py-3 font-semibold rounded-md transition-all duration-150 transform active:scale-98 bg-indigo-600 text-white border border-transparent hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600">Start Learning</button>
         </div>
@@ -187,6 +190,19 @@
             }, 5000);
         }
 
+        function populateDeviceDatalist(devices) {
+            const datalist = document.getElementById('device-names');
+            // Clear any existing options to prevent duplicates
+            datalist.innerHTML = '';
+            
+            // Add an option for each unique device name
+            for (const deviceName in devices) {
+                const option = document.createElement('option');
+                option.value = deviceName;
+                datalist.appendChild(option);
+            }
+        }
+
         function showMessage(type, text) {
             messageBox.innerText = text;
             messageBox.classList.remove('hidden');
@@ -235,6 +251,7 @@
 
                 if (data.status === 'success') {
                     const devices = data.devices;
+                    populateDeviceDatalist(devices);
                     if (Object.keys(devices).length === 0) {
                         commandsList.innerHTML = `<p class="text-gray-600 dark:text-gray-400">No learned commands found for this device.</p>`;
                     } else {
