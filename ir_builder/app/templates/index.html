@@ -88,13 +88,13 @@
         }
         
         .btn-danger {
-            background-color: var(--error-color);
+            background-color: var(#b91c1c);
             color: #ffffff;
-            border-color: var(--error-color);
+            border-color: var(#b91c1c);
         }
 
         .btn-danger:hover {
-            background-color: #b91c1c;
+            background-color: #711111;
         }
 
         .btn-secondary {
@@ -105,7 +105,7 @@
 </head>
 <body class="bg-slate-50 text-gray-900 dark:bg-gray-900 dark:text-gray-50">
     <div class="max-w-3xl mx-auto flex flex-col gap-6 p-4">
-        <h1 class="text-3xl font-bold text-center mb-4">Broadlink IR Automation Helper</h1>
+        <h1 class="text-3xl font-bold text-center mb-4">Broadlink IR Automation</h1>
 
         <!-- Custom Message Box -->
         <div id="message-box" class="p-4 rounded-md mb-4 font-semibold hidden"></div>
@@ -119,6 +119,7 @@
                 <option value="{{ device.entity_id }}" data-mac="{{ device.mac }}">{{ device.entity_id }} (Name:{{ device.name }})</option>
                 {% endfor %}
             </select>
+            <button onclick="loadCommands()" alt="Reloads the codes from the source file for the selected device" class="px-6 py-3 font-semibold rounded-md transition-all duration-150 transform active:scale-98 bg-transparent text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 ml-2">Refresh Codes</button>
         </div>
 
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
@@ -312,8 +313,8 @@
                 const data = await response.json();
 
                 if (data.status === 'success') {
-                    showMessage('success', data.message + ' Screen will refresh in 5 seconds...');
-                    await delay(5000);
+                    showMessage('success', data.message + ' Screen will refresh in 7 seconds...');
+                    await delay(7000);
                     loadCommands(); // Refresh the list
                 } else {
                     showMessage('error', data.message);
@@ -348,8 +349,8 @@
                 });
                 const data = await response.json();
                 if (data.status === 'success') {
-                    showMessage('success', data.message+ ' Screen will refresh in 5 seconds...');
-                    await delay(5000);
+                    showMessage('success', data.message+ ' Screen will refresh in 7 seconds...');
+                    await delay(7000);
                     loadCommands();
                 } else {
                     showMessage('error', data.message);
