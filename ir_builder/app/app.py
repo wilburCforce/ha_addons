@@ -329,33 +329,5 @@ def learn_mode():
         app.logger.error(f"Failed to call service for {entity_id}: {e}")
         return jsonify({'status': 'error', 'message': f'Failed to call service: {e}'}), 500
 
-@app.route('/generate_yaml', methods=['POST'])
-def generate_yaml():
-    """Generates a YAML automation for a learned command."""
-    entity_id = request.json.get('entity_id')
-    command_name = request.json.get('command_name')
-    app.logger.info(f"Received request to generate YAML for entity {entity_id} with command '{command_name}'.")
-
-    if not all([entity_id, command_name]):
-        return jsonify({'status': 'error', 'message': 'Missing required parameters.'}), 400
-
-    yaml_template = f"""
-- id: 'generated_ir_command_{command_name}'
-  alias: 'IR Command - {command_name.replace("_", " ").title()}'
-  trigger:
-    - platform: state
-      entity_id: {entity_id}
-      to: 'learning_command_complete'
-  action:
-    - service: remote.send_command
-      data:
-        entity_id: {entity_id}
-        command:
-          - '{command_name}'
-    """
-    
-    app.logger.info("Successfully generated YAML template.")
-    return jsonify({'status': 'success', 'yaml': yaml_template})
-
 if __name__ == '__main__':
     wsgi.server(eventlet.listen(('0.0.0.0', 8389)), app)

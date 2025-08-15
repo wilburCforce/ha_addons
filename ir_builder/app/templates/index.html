@@ -144,10 +144,17 @@
 
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
             <h2 class="text-2xl font-semibold mb-2">4. Generate Automation YAML</h2>
-            <p class="text-gray-600 dark:text-gray-400 mb-4">After learning is complete, you can generate the YAML for your automation using the new command name.</p>
-            <pre><textarea id="yaml-output" readonly class="block w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors duration-200 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 mb-4"></textarea></pre>
-            <button onclick="generateYaml()" class="px-6 py-3 font-semibold rounded-md transition-all duration-150 transform active:scale-98 bg-indigo-600 text-white border border-transparent hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600">Generate YAML</button>
-            <button onclick="copyYaml()" class="px-6 py-3 font-semibold rounded-md transition-all duration-150 transform active:scale-98 bg-transparent text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 ml-2">Copy YAML</button>
+            <p class="text-gray-600 dark:text-gray-400 mb-4">Select a device and one or more commands below to generate the YAML for your automation.</p>
+            
+            <div id="yaml-selection-container" class="flex flex-col gap-3">
+                <!-- This is where the lists of selectable commands will be dynamically populated by JavaScript -->
+                <p class="text-gray-600 dark:text-gray-400">Select a device from the list above to view commands.</p>
+            </div>
+
+            <button onclick="generateYaml()" class="mt-4 px-6 py-3 font-semibold rounded-md transition-all duration-150 transform active:scale-98 bg-indigo-600 text-white border border-transparent hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600">Generate YAML</button>
+
+            <pre class="mt-4"><textarea id="yaml-output" readonly class="block w-full h-40 p-3 border border-gray-300 dark:border-gray-600 rounded-md outline-none transition-colors duration-200 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100"></textarea></pre>
+            <button onclick="copyYaml()" class="mt-4 px-6 py-3 font-semibold rounded-md transition-all duration-150 transform active:scale-98 bg-transparent text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 ml-2">Copy YAML</button>
         </div>
     </div>
 
@@ -229,9 +236,11 @@
         async function loadCommands() {
             const deviceSelect = document.getElementById('device-select');
             const selectedOption = deviceSelect.options[deviceSelect.selectedIndex];
+            const yamlSelectionContainer = document.getElementById('yaml-selection-container');
 
             if (!selectedOption || !selectedOption.value) {
                 commandsList.innerHTML = `<p class="text-gray-600 dark:text-gray-400">Please select a device above to see its learned commands.</p>`;
+                yamlSelectionContainer.innerHTML = `<p class="text-gray-600 dark:text-gray-400">Select a device from the list above to view commands.</p>`;
                 return;
             }
 
@@ -239,6 +248,7 @@
             const macAddress = selectedOption.dataset.mac;
 
             commandsList.innerHTML = '';
+            yamlSelectionContainer.innerHTML = '';
             loadingSpinner.classList.remove('hidden');
 
             try {
@@ -251,22 +261,36 @@
 
                 if (data.status === 'success') {
                     const devices = data.devices;
+                    
+                    // Populate the device datalist
                     populateDeviceDatalist(devices);
+
                     if (Object.keys(devices).length === 0) {
                         commandsList.innerHTML = `<p class="text-gray-600 dark:text-gray-400">No learned commands found for this device.</p>`;
+                        yamlSelectionContainer.innerHTML = `<p class="text-gray-600 dark:text-gray-400">No learned commands found for this device.</p>`;
                     } else {
                         let html = '';
+                        let yamlSelectionHtml = '';
+
                         for (const deviceName in devices) {
                             const commands = devices[deviceName];
                             
-                            // Create a collapsible device group
+                            // HTML for Section 2 (Delete Commands)
                             html += `
+                                <div class="bg-gray-100 dark:bg-gray-700 rounded-md p-4 transition-all duration-200">
+                                    <h3 class="font-bold text-lg mb-2">${deviceName}</h3>
+                                    <div class="pl-4 flex flex-col gap-2">
+                            `;
+
+                            // HTML for Section 4 (Select Commands for YAML)
+                            yamlSelectionHtml += `
                                 <div class="bg-gray-100 dark:bg-gray-700 rounded-md p-4 transition-all duration-200">
                                     <h3 class="font-bold text-lg mb-2">${deviceName}</h3>
                                     <div class="pl-4 flex flex-col gap-2">
                             `;
                             
                             for (const commandName in commands) {
+                                // For the delete list
                                 html += `
                                     <div class="flex justify-between items-center bg-white dark:bg-gray-800 rounded-md p-3 border border-gray-200 dark:border-gray-600 text-sm">
                                         <div class="flex-grow text-gray-800 dark:text-gray-200">
@@ -275,22 +299,37 @@
                                         <button onclick="deleteCommand('${entityId}', '${deviceName}', '${commandName}')" class="px-3 py-1 text-sm font-semibold rounded-md transition-all duration-150 transform active:scale-98 bg-red-600 text-white border border-transparent hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600">Delete</button>
                                     </div>
                                 `;
+
+                                // For the YAML selection list
+                                yamlSelectionHtml += `
+                                    <label class="flex items-center gap-2 bg-white dark:bg-gray-800 rounded-md p-3 border border-gray-200 dark:border-gray-600 text-sm cursor-pointer">
+                                        <input type="checkbox" data-device-name="${deviceName}" value="${commandName}" class="form-checkbox h-4 w-4 text-indigo-600 dark:text-indigo-400 rounded focus:ring-indigo-500 transition-colors duration-200">
+                                        <span class="text-gray-800 dark:text-gray-200">${commandName}</span>
+                                    </label>
+                                `;
                             }
                             
-                            // Close the device group
+                            // Close the device groups
                             html += `
+                                    </div>
+                                </div>
+                            `;
+                            yamlSelectionHtml += `
                                     </div>
                                 </div>
                             `;
                         }
                         commandsList.innerHTML = html;
+                        yamlSelectionContainer.innerHTML = yamlSelectionHtml;
                     }
                 } else {
                     commandsList.innerHTML = `<p class="text-red-600 dark:text-red-400">${data.message}</p>`;
+                    yamlSelectionContainer.innerHTML = `<p class="text-red-600 dark:text-red-400">${data.message}</p>`;
                     showMessage('error', `Failed to load commands: ${data.message}`);
                 }
             } catch (error) {
                 commandsList.innerHTML = `<p class="text-red-600 dark:text-red-400">An error occurred while loading commands: ${error}</p>`;
+                yamlSelectionContainer.innerHTML = `<p class="text-red-600 dark:text-gray-400">An error occurred while loading commands: ${error}</p>`;
                 showMessage('error', `An error occurred: ${error}`);
             } finally {
                 loadingSpinner.classList.add('hidden');
@@ -390,35 +429,35 @@
             }
         }
 
-        async function generateYaml() {
-            const entityId = deviceSelect.value;
-            const commandName = newCommandNameInput.value.trim();
-
-            if (!entityId) {
-                showMessage('error', 'Please select a Broadlink device.');
-                return;
-            }
+        function generateYaml() {
+            const entityId = document.getElementById('device-select').value;
+            const commandsContainer = document.getElementById('yaml-selection-container');
+            const checkboxes = commandsContainer.querySelectorAll('input[type="checkbox"]:checked');
+            const yamlOutput = document.getElementById('yaml-output');
             
-            if (!commandName) {
-                showMessage('error', 'Please enter a command name in the "Learn a New Command" section.');
+            if (!entityId || checkboxes.length === 0) {
+                yamlOutput.value = '';
+                showMessage('error', 'Please select a device and at least one command.');
                 return;
             }
 
-            try {
-                const response = await fetch(`${baseUrl}generate_yaml`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ device_id: entityId, command_name: commandName })
+            const deviceName = checkboxes[0].dataset.deviceName;
+            let yamlString = `script:\n  ${deviceName}:\n    sequence:\n      - action: remote.send_command\n        target:\n          entity_id: ${entityId}\n        data:\n          device: ${deviceName}\n`;
+
+            if (checkboxes.length === 1) {
+                // Single command format
+                const commandName = checkboxes[0].value;
+                yamlString += `          command: ${commandName}\n`;
+            } else {
+                // Multiple command format
+                yamlString += `          command:\n`;
+                checkboxes.forEach(checkbox => {
+                    yamlString += `            - ${checkbox.value}\n`;
                 });
-                const data = await response.json();
-                if (data.status === 'success') {
-                    yamlOutput.value = data.yaml.trim();
-                } else {
-                    showMessage('error', data.message);
-                }
-            } catch (error) {
-                showMessage('error', `An error occurred: ${error}`);
             }
+
+            yamlOutput.value = yamlString.trim();
+            showMessage('success', 'YAML generated successfully!');
         }
         
         function copyYaml() {
