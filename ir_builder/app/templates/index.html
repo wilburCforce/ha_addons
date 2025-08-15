@@ -144,14 +144,21 @@
 
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
             <h2 class="text-2xl font-semibold mb-2">4. Generate Automation YAML</h2>
-            <p class="text-gray-600 dark:text-gray-400 mb-4">Select a device and one or more commands below to generate the YAML for your automation.</p>
+            <p class="text-gray-600 dark:text-gray-400 mb-4">Select one or more commands below to generate the YAML for your automation.</p>
+            
+            <!-- YAML Format Toggle -->
+            <div class="flex items-center gap-4 mb-4">
+                <span class="text-gray-600 dark:text-gray-400 font-medium">YAML Format:</span>
+                <div class="flex gap-2">
+                    <button id="format-script" class="px-4 py-2 font-semibold rounded-md text-white transition-all duration-150 transform active:scale-98 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600">Script</button>
+                    <button id="format-actions" class="px-4 py-2 font-semibold rounded-md text-gray-700 dark:text-gray-300 transition-all duration-150 transform active:scale-98 bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500">Actions</button>
+                </div>
+            </div>
             
             <div id="yaml-selection-container" class="flex flex-col gap-3">
                 <!-- This is where the lists of selectable commands will be dynamically populated by JavaScript -->
                 <p class="text-gray-600 dark:text-gray-400">Select a device from the list above to view commands.</p>
             </div>
-
-            <button onclick="generateYaml()" class="mt-4 px-6 py-3 font-semibold rounded-md transition-all duration-150 transform active:scale-98 bg-indigo-600 text-white border border-transparent hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600">Generate YAML</button>
 
             <pre class="mt-4"><textarea id="yaml-output" readonly class="block w-full h-40 p-3 border border-gray-300 dark:border-gray-600 rounded-md outline-none transition-colors duration-200 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100"></textarea></pre>
             <button onclick="copyYaml()" class="mt-4 px-6 py-3 font-semibold rounded-md transition-all duration-150 transform active:scale-98 bg-transparent text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 ml-2">Copy YAML</button>
@@ -197,6 +204,28 @@
             }, 5000);
         }
 
+        const formatScriptBtn = document.getElementById('format-script');
+        const formatActionsBtn = document.getElementById('format-actions');
+        let currentYamlFormat = 'script'; // Default to script
+
+        formatScriptBtn.addEventListener('click', () => {
+            currentYamlFormat = 'script';
+            formatScriptBtn.classList.remove('bg-gray-200', 'hover:bg-gray-300', 'dark:bg-gray-600', 'dark:hover:bg-gray-500', 'text-gray-700', 'dark:text-gray-300');
+            formatScriptBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700', 'dark:bg-indigo-500', 'dark:hover:bg-indigo-600', 'text-white');
+            formatActionsBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700', 'dark:bg-indigo-500', 'dark:hover:bg-indigo-600', 'text-white');
+            formatActionsBtn.classList.add('bg-gray-200', 'hover:bg-gray-300', 'dark:bg-gray-600', 'dark:hover:bg-gray-500', 'text-gray-700', 'dark:text-gray-300');
+            generateYaml(); // Re-generate YAML with the new format
+        });
+
+        formatActionsBtn.addEventListener('click', () => {
+            currentYamlFormat = 'actions';
+            formatActionsBtn.classList.remove('bg-gray-200', 'hover:bg-gray-300', 'dark:bg-gray-600', 'dark:hover:bg-gray-500', 'text-gray-700', 'dark:text-gray-300');
+            formatActionsBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700', 'dark:bg-indigo-500', 'dark:hover:bg-indigo-600', 'text-white');
+            formatScriptBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700', 'dark:bg-indigo-500', 'dark:hover:bg-indigo-600', 'text-white');
+            formatScriptBtn.classList.add('bg-gray-200', 'hover:bg-gray-300', 'dark:bg-gray-600', 'dark:hover:bg-gray-500', 'text-gray-700', 'dark:text-gray-300');
+            generateYaml(); // Re-generate YAML with the new format
+        });
+
         function populateDeviceDatalist(devices) {
             const datalist = document.getElementById('device-names');
             // Clear any existing options to prevent duplicates
@@ -207,6 +236,27 @@
                 const option = document.createElement('option');
                 option.value = deviceName;
                 datalist.appendChild(option);
+            }
+        }
+
+        function toggleDeviceCheckboxes(checkbox) {
+            const selectedCheckboxes = document.querySelectorAll('#yaml-selection-container input[type="checkbox"]:checked');
+            const allCheckboxes = document.querySelectorAll('#yaml-selection-container input[type="checkbox"]');
+
+            if (selectedCheckboxes.length > 0) {
+                const selectedDeviceName = selectedCheckboxes[0].dataset.deviceName;
+                allCheckboxes.forEach(cb => {
+                    if (cb.dataset.deviceName !== selectedDeviceName) {
+                        cb.disabled = true;
+                    } else {
+                        cb.disabled = false;
+                    }
+                });
+            } else {
+                // If no checkboxes are checked, enable all of them
+                allCheckboxes.forEach(cb => {
+                    cb.disabled = false;
+                });
             }
         }
 
@@ -262,7 +312,6 @@
                 if (data.status === 'success') {
                     const devices = data.devices;
                     
-                    // Populate the device datalist
                     populateDeviceDatalist(devices);
 
                     if (Object.keys(devices).length === 0) {
@@ -275,14 +324,12 @@
                         for (const deviceName in devices) {
                             const commands = devices[deviceName];
                             
-                            // HTML for Section 2 (Delete Commands)
                             html += `
                                 <div class="bg-gray-100 dark:bg-gray-700 rounded-md p-4 transition-all duration-200">
                                     <h3 class="font-bold text-lg mb-2">${deviceName}</h3>
                                     <div class="pl-4 flex flex-col gap-2">
                             `;
 
-                            // HTML for Section 4 (Select Commands for YAML)
                             yamlSelectionHtml += `
                                 <div class="bg-gray-100 dark:bg-gray-700 rounded-md p-4 transition-all duration-200">
                                     <h3 class="font-bold text-lg mb-2">${deviceName}</h3>
@@ -290,7 +337,6 @@
                             `;
                             
                             for (const commandName in commands) {
-                                // For the delete list
                                 html += `
                                     <div class="flex justify-between items-center bg-white dark:bg-gray-800 rounded-md p-3 border border-gray-200 dark:border-gray-600 text-sm">
                                         <div class="flex-grow text-gray-800 dark:text-gray-200">
@@ -300,16 +346,15 @@
                                     </div>
                                 `;
 
-                                // For the YAML selection list
+                                // The onchange event listener is added here
                                 yamlSelectionHtml += `
                                     <label class="flex items-center gap-2 bg-white dark:bg-gray-800 rounded-md p-3 border border-gray-200 dark:border-gray-600 text-sm cursor-pointer">
-                                        <input type="checkbox" data-device-name="${deviceName}" value="${commandName}" class="form-checkbox h-4 w-4 text-indigo-600 dark:text-indigo-400 rounded focus:ring-indigo-500 transition-colors duration-200">
+                                        <input type="checkbox" data-device-name="${deviceName}" value="${commandName}" onchange="toggleDeviceCheckboxes(this); generateYaml();" class="form-checkbox h-4 w-4 text-indigo-600 dark:text-indigo-400 rounded focus:ring-indigo-500 transition-colors duration-200">
                                         <span class="text-gray-800 dark:text-gray-200">${commandName}</span>
                                     </label>
                                 `;
                             }
                             
-                            // Close the device groups
                             html += `
                                     </div>
                                 </div>
@@ -324,7 +369,7 @@
                     }
                 } else {
                     commandsList.innerHTML = `<p class="text-red-600 dark:text-red-400">${data.message}</p>`;
-                    yamlSelectionContainer.innerHTML = `<p class="text-red-600 dark:text-red-400">${data.message}</p>`;
+                    yamlSelectionContainer.innerHTML = `<p class="text-red-600 dark:text-gray-400">${data.message}</p>`;
                     showMessage('error', `Failed to load commands: ${data.message}`);
                 }
             } catch (error) {
@@ -430,34 +475,50 @@
         }
 
         function generateYaml() {
-            const entityId = document.getElementById('device-select').value;
+            const selectedOption = document.getElementById('device-select').options[document.getElementById('device-select').selectedIndex];
+            const entityId = selectedOption.value;
+            const deviceId = selectedOption.dataset.mac; // Assuming the mac address can serve as a placeholder for device_id
             const commandsContainer = document.getElementById('yaml-selection-container');
             const checkboxes = commandsContainer.querySelectorAll('input[type="checkbox"]:checked');
             const yamlOutput = document.getElementById('yaml-output');
             
-            if (!entityId || checkboxes.length === 0) {
+            if (checkboxes.length === 0) {
                 yamlOutput.value = '';
-                showMessage('error', 'Please select a device and at least one command.');
+                showMessage('info', 'YAML output cleared. Select a command to generate YAML.');
                 return;
             }
 
             const deviceName = checkboxes[0].dataset.deviceName;
-            let yamlString = `script:\n  ${deviceName}:\n    sequence:\n      - action: remote.send_command\n        target:\n          entity_id: ${entityId}\n        data:\n          device: ${deviceName}\n`;
+            let yamlString = '';
+            const commandNames = Array.from(checkboxes).map(cb => cb.value);
 
-            if (checkboxes.length === 1) {
-                // Single command format
-                const commandName = checkboxes[0].value;
-                yamlString += `          command: ${commandName}\n`;
-            } else {
-                // Multiple command format
-                yamlString += `          command:\n`;
-                checkboxes.forEach(checkbox => {
-                    yamlString += `            - ${checkbox.value}\n`;
-                });
+            if (currentYamlFormat === 'script') {
+                yamlString = `script:\n  ${deviceName}_control:\n    sequence:\n      - service: remote.send_command\n        target:\n          entity_id: ${entityId}\n        data:\n          device: ${deviceName}\n`;
+                
+                if (commandNames.length === 1) {
+                    yamlString += `          command: ${commandNames[0]}\n`;
+                } else {
+                    yamlString += `          command:\n`;
+                    commandNames.forEach(command => {
+                        yamlString += `            - ${command}\n`;
+                    });
+                }
+            } else { // currentYamlFormat === 'actions'
+                yamlString = `actions:\n`;
+
+                if (commandNames.length === 1) {
+                    yamlString += `  - service: remote.send_command\n    metadata: {}\n    data:\n      num_repeats: 1\n      delay_secs: 0.4\n      hold_secs: 0\n      device: ${deviceName}\n      command: ${commandNames[0]}\n    target:\n      device_id: ${deviceId}\n`;
+                } else {
+                    yamlString += `  - service: remote.send_command\n    metadata: {}\n    data:\n      num_repeats: 1\n      delay_secs: 0.4\n      hold_secs: 0\n      device: ${deviceName}\n      command: \n`;
+                    commandNames.forEach(command => {
+                        yamlString += `        - ${command}\n`;
+                    });
+                    yamlString += `    target:\n      device_id: ${deviceId}\n`;
+                }
             }
 
             yamlOutput.value = yamlString.trim();
-            showMessage('success', 'YAML generated successfully!');
+            showMessage('success', 'YAML updated successfully!');
         }
         
         function copyYaml() {
